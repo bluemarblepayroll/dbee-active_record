@@ -27,11 +27,11 @@ module Dbee
 
           AGGREGRATOR_EVALUATORS = {
             nil => ->(arel_node) { arel_node },
-            Query::Field::Aggregator::AVE => ->(arel_node) { arel_node.average },
-            Query::Field::Aggregator::COUNT => ->(arel_node) { arel_node.count },
-            Query::Field::Aggregator::MAX => ->(arel_node) { arel_node.maximum },
-            Query::Field::Aggregator::MIN => ->(arel_node) { arel_node.minimum },
-            Query::Field::Aggregator::SUM => ->(arel_node) { arel_node.sum }
+            Query::Field::Aggregator::AVE => ->(node) { Arel::Nodes::Avg.new([node]) },
+            Query::Field::Aggregator::COUNT => ->(node) { Arel::Nodes::Count.new([node]) },
+            Query::Field::Aggregator::MAX => ->(node) { Arel::Nodes::Max.new([node]) },
+            Query::Field::Aggregator::MIN => ->(node) { Arel::Nodes::Min.new([node]) },
+            Query::Field::Aggregator::SUM => ->(node) { Arel::Nodes::Sum.new([node]) }
           }.freeze
 
           private_constant :AGGREGRATOR_EVALUATORS

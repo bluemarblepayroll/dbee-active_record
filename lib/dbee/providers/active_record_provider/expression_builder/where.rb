@@ -30,16 +30,16 @@ module Dbee
           private
 
           FILTER_EVALUATORS = {
-            Query::Filters::Contains => ->(column, val) { column.matches("%#{val}%") },
-            Query::Filters::Equals => ->(column, val) { column.eq(val) },
-            Query::Filters::GreaterThan => ->(column, val) { column.gt(val) },
-            Query::Filters::GreaterThanOrEqualTo => ->(column, val) { column.gteq(val) },
-            Query::Filters::LessThan => ->(column, val) { column.lt(val) },
-            Query::Filters::LessThanOrEqualTo => ->(column, val) { column.lteq(val) },
-            Query::Filters::NotContain => ->(column, val) { column.does_not_match("%#{val}%") },
-            Query::Filters::NotEquals => ->(column, val) { column.not_eq(val) },
-            Query::Filters::NotStartWith => ->(column, val) { column.does_not_match("#{val}%") },
-            Query::Filters::StartsWith => ->(column, val) { column.matches("#{val}%") }
+            Query::Filters::Contains => ->(node, val) { node.matches("%#{val}%") },
+            Query::Filters::Equals => ->(node, val) { node.eq(val) },
+            Query::Filters::GreaterThan => ->(node, val) { node.gt(val) },
+            Query::Filters::GreaterThanOrEqualTo => ->(node, val) { node.gteq(val) },
+            Query::Filters::LessThan => ->(node, val) { node.lt(val) },
+            Query::Filters::LessThanOrEqualTo => ->(node, val) { node.lteq(val) },
+            Query::Filters::NotContain => ->(node, val) { node.does_not_match("%#{val}%") },
+            Query::Filters::NotEquals => ->(node, val) { node.not_eq(val) },
+            Query::Filters::NotStartWith => ->(node, val) { node.does_not_match("#{val}%") },
+            Query::Filters::StartsWith => ->(node, val) { node.matches("#{val}%") }
           }.freeze
 
           private_constant :FILTER_EVALUATORS
