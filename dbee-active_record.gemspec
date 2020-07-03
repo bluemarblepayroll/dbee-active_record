@@ -51,6 +51,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency('rspec', '~> 3.8')
   s.add_development_dependency('rubocop', '~>0.81.0')
   s.add_development_dependency('simplecov', '~>0.17.0')
-  s.add_development_dependency('simplecov-console', '~>0.6.0')
+  s.add_development_dependency('simplecov-console', '~>0.7.0')
   s.add_development_dependency('sqlite3', '~>1')
 end
