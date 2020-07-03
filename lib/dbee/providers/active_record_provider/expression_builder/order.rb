@@ -12,15 +12,8 @@ module Dbee
     class ActiveRecordProvider
       class ExpressionBuilder
         # Derives Arel#order predicates.
-        class OrderMaker
+        class Order
           include Singleton
-
-          SORTER_EVALUATORS = {
-            Query::Sorters::Ascending => ->(column) { column },
-            Query::Sorters::Descending => ->(column) { column.desc }
-          }.freeze
-
-          private_constant :SORTER_EVALUATORS
 
           def make(sorter, arel_column)
             method = SORTER_EVALUATORS[sorter.class]
@@ -29,6 +22,13 @@ module Dbee
 
             method.call(arel_column)
           end
+
+          SORTER_EVALUATORS = {
+            Query::Sorters::Ascending => ->(column) { column },
+            Query::Sorters::Descending => ->(column) { column.desc }
+          }.freeze
+
+          private_constant :SORTER_EVALUATORS
         end
       end
     end

@@ -103,3 +103,23 @@ Partitioner Example 2:
           value: Dog
         - name: deleted
           value: false
+
+Patients:
+  name: patients
+  models:
+    - name: patient_payments
+      constraints:
+        - type: reference
+          parent: id
+          name: patient_id
+    - name: patient_field_values
+      constraints:
+        - type: reference
+          parent: id
+          name: patient_id
+      models:
+        - name: fields
+          constraints:
+            - type: reference
+              parent: field_id
+              name: id

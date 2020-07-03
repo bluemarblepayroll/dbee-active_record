@@ -1,5 +1,19 @@
-Metrics/LineLength:
+AllCops:
+  TargetRubyVersion: 2.5
+
+Layout/LineLength:
   Max: 100
+
+Lint/RaiseException:
+  Enabled: True
+
+Lint/StructNewOverride:
+  Enabled: True
+
+Metrics/AbcSize:
+  Max: 16
+  Exclude:
+    - spec/db_helper.rb
 
 Metrics/BlockLength:
   ExcludedMethods:
@@ -13,18 +27,19 @@ Metrics/BlockLength:
     - spec/dbee/**/*
     - dbee-active_record.gemspec
 
+Metrics/ClassLength:
+  Max: 125
+
 Metrics/MethodLength:
   Max: 25
   Exclude:
     - spec/db_helper.rb
 
-AllCops:
-  TargetRubyVersion: 2.3
+Style/HashEachMethods:
+  Enabled: True
 
-Metrics/AbcSize:
-  Max: 16
-  Exclude:
-    - spec/db_helper.rb
+Style/HashTransformKeys:
+  Enabled: True
 
-Metrics/ClassLength:
-  Max: 125
+Style/HashTransformValues:
+  Enabled: True

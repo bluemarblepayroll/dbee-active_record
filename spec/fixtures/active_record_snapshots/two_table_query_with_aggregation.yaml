@@ -1,0 +1,71 @@
+model_name: Patients
+query:
+  fields:
+    - key_path: id
+      display: 'ID #'
+    - key_path: first
+      display: First Name
+    - key_path: patient_payments.amount
+      display: Ave Payment
+      aggregator: ave
+    - key_path: patient_payments.amount
+      display: Number of Payments
+      aggregator: count
+    - key_path: patient_payments.amount
+      display: Max Payment
+      aggregator: max
+    - key_path: patient_payments.amount
+      display: Min Payment
+      aggregator: min
+    - key_path: patient_payments.amount
+      display: Total Paid
+      aggregator: sum
+
+sqlite_readable: |+
+  SELECT
+   "patients"."id" AS 'ID #',
+   "patients"."first" AS 'First Name',
+   AVG("patient_payments"."amount") AS 'Ave Payment',
+   COUNT("patient_payments"."amount") AS 'Number of Payments',
+   MAX("patient_payments"."amount") AS 'Max Payment',
+   MIN("patient_payments"."amount") AS 'Min Payment',
+   SUM("patient_payments"."amount") AS 'Total Paid'
+   FROM "patients" "patients"
+   LEFT OUTER JOIN "patient_payments" "patient_payments" ON "patient_payments"."patient_id" = "patients"."id"
+   GROUP BY "patients"."id", "patients"."first"
+sqlite_not_readable: |+
+  SELECT
+   "t0"."id" AS 'c0',
+  "t0"."first" AS 'c1',
+  AVG("t1"."amount") AS 'c2',
+  COUNT("t1"."amount") AS 'c3',
+  MAX("t1"."amount") AS 'c4',
+  MIN("t1"."amount") AS 'c5',
+  SUM("t1"."amount") AS 'c6'
+  FROM "patients" "t0"
+  LEFT OUTER JOIN "patient_payments" "t1" ON "t1"."patient_id" = "t0"."id"
+  GROUP BY "t0"."id", "t0"."first"
+mysql_readable: |+
+  SELECT
+   `patients`.`id` AS 'ID #',
+  `patients`.`first` AS 'First Name',
+  AVG(`patient_payments`.`amount`) AS 'Ave Payment',
+  COUNT(`patient_payments`.`amount`) AS 'Number of Payments',
+  MAX(`patient_payments`.`amount`) AS 'Max Payment',
+  MIN(`patient_payments`.`amount`) AS 'Min Payment',
+  SUM(`patient_payments`.`amount`) AS 'Total Paid'
+  FROM `patients` `patients`
+  LEFT OUTER JOIN `patient_payments` `patient_payments` ON `patient_payments`.`patient_id` = `patients`.`id`
+  GROUP BY `patients`.`id`, `patients`.`first`
+mysql_not_readable: |+
+  SELECT
+   `t0`.`id` AS 'c0',
+  `t0`.`first` AS 'c1',
+  AVG(`t1`.`amount`) AS 'c2',
+  COUNT(`t1`.`amount`) AS 'c3',
+  MAX(`t1`.`amount`) AS 'c4',
+  MIN(`t1`.`amount`) AS 'c5',
+  SUM(`t1`.`amount`) AS 'c6'
+  FROM `patients` `t0`
+  LEFT OUTER JOIN `patient_payments` `t1` ON `t1`.`patient_id` = `t0`.`id`
+  GROUP BY `t0`.`id`, `t0`.`first`

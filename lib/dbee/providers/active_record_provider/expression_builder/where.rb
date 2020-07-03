@@ -12,8 +12,22 @@ module Dbee
     class ActiveRecordProvider
       class ExpressionBuilder
         # Derives Arel#where predicates.
-        class WhereMaker
+        class Where
           include Singleton
+
+          def make(filter, arel_column)
+            values = normalize(filter.value)
+
+            if filter.is_a?(Query::Filters::Equals) && values.length > 1
+              arel_column.in(values)
+            elsif filter.is_a?(Query::Filters::NotEquals) && values.length > 1
+              arel_column.not_in(values)
+            else
+              use_or(filter, arel_column)
+            end
+          end
+
+          private
 
           FILTER_EVALUATORS = {
             Query::Filters::Contains => ->(column, val) { column.matches("%#{val}%") },
@@ -29,20 +43,6 @@ module Dbee
           }.freeze
 
           private_constant :FILTER_EVALUATORS
-
-          def make(filter, arel_column)
-            values = normalize(filter.value)
-
-            if filter.is_a?(Query::Filters::Equals) && values.length > 1
-              arel_column.in(values)
-            elsif filter.is_a?(Query::Filters::NotEquals) && values.length > 1
-              arel_column.not_in(values)
-            else
-              use_or(filter, arel_column)
-            end
-          end
-
-          private
 
           def normalize(value)
             value ? Array(value).flatten : [nil]

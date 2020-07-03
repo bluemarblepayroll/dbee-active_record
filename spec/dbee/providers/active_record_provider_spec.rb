@@ -79,7 +79,7 @@ describe Dbee::Providers::ActiveRecordProvider do
       end
     end
 
-    context 'Executing SQL' do
+    context 'Shallow SQL Execution' do
       %w[sqlite].each do |dbms|
         context dbms do
           before(:all) do
@@ -105,6 +105,107 @@ describe Dbee::Providers::ActiveRecordProvider do
             end
           end
         end
+      end
+    end
+  end
+
+  describe 'Deep SQL execution' do
+    before(:all) do
+      connect_to_db(:sqlite)
+      load_schema
+      load_data
+    end
+
+    describe 'pivoting' do
+      let(:snapshot_path) do
+        %w[
+          spec
+          fixtures
+          active_record_snapshots
+          two_table_query_with_pivoting.yaml
+        ]
+      end
+
+      let(:snapshot) { yaml_file_read(*snapshot_path) }
+      let(:query)    { Dbee::Query.make(snapshot['query']) }
+      let(:model)    { Dbee::Model.make(models['Patients']) }
+
+      it 'pivots table rows into columns' do
+        sql = described_class.new.sql(model, query)
+
+        results = ActiveRecord::Base.connection.execute(sql)
+
+        expect(results[0]).to include(
+          'First Name' => 'Bozo',
+          'Date of Birth' => '1904-04-04',
+          'Drivers License #' => '82-54-hut-hut-hike!',
+          'Demographic Notes' => 'The patient is funny!',
+          'Contact Notes' => 'Do not call this patient at night!'
+        )
+
+        expect(results[1]).to include(
+          'First Name' => 'Frank',
+          'Date of Birth' => nil,
+          'Drivers License #' => nil,
+          'Demographic Notes' => nil,
+          'Contact Notes' => nil
+        )
+
+        expect(results[2]).to include(
+          'First Name' => 'Bugs',
+          'Date of Birth' => '2040-01-01',
+          'Drivers License #' => nil,
+          'Demographic Notes' => nil,
+          'Contact Notes' => 'Call anytime!!'
+        )
+      end
+    end
+
+    describe 'aggregation' do
+      let(:snapshot_path) do
+        %w[
+          spec
+          fixtures
+          active_record_snapshots
+          two_table_query_with_aggregation.yaml
+        ]
+      end
+
+      let(:snapshot) { yaml_file_read(*snapshot_path) }
+      let(:query)    { Dbee::Query.make(snapshot['query']) }
+      let(:model)    { Dbee::Model.make(models['Patients']) }
+
+      it 'executes correct SQL aggregate functions' do
+        sql = described_class.new.sql(model, query)
+
+        results = ActiveRecord::Base.connection.execute(sql)
+
+        expect(results[0]).to include(
+          'First Name' => 'Bozo',
+          'Ave Payment' => 10,
+          'Number of Payments' => 3,
+          'Max Payment' => 15,
+          'Min Payment' => 5,
+          'Total Paid' => 30
+        )
+
+        expect(results[1]).to include(
+          'First Name' => 'Frank',
+          'Ave Payment' => 100,
+          'Number of Payments' => 2,
+          'Max Payment' => 150,
+          'Min Payment' => 50,
+          'Total Paid' => 200
+        )
+
+        expect(results[2]).to include(
+          'First Name' => 'Bugs',
+          'Ave Payment' => nil,
+          'Number of Payments' => 0,
+          'Max Payment' => nil,
+          'Min Payment' => nil,
+          'Total Paid' => nil
+        )
       end
     end
   end

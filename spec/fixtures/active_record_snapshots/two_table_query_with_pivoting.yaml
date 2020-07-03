@@ -1,0 +1,88 @@
+model_name: Patients
+query:
+  fields:
+    - key_path: id
+      display: 'ID #'
+    - key_path: first
+      display: First Name
+    - key_path: patient_field_values.value
+      display: Date of Birth
+      aggregator: max
+      filters:
+        - key_path: patient_field_values.fields.section
+          value: demographics
+        - key_path: patient_field_values.fields.key
+          value: dob
+    - key_path: patient_field_values.value
+      display: Demographic Notes
+      aggregator: max
+      filters:
+        - key_path: patient_field_values.fields.section
+          value: demographics
+        - key_path: patient_field_values.fields.key
+          value: notes
+    - key_path: patient_field_values.value
+      display: 'Drivers License #'
+      aggregator: max
+      filters:
+        - key_path: patient_field_values.fields.section
+          value: demographics
+        - key_path: patient_field_values.fields.key
+          value: drivers_license
+    - key_path: patient_field_values.value
+      display: Contact Notes
+      aggregator: max
+      filters:
+        - key_path: patient_field_values.fields.section
+          value: contact
+        - key_path: patient_field_values.fields.key
+          value: notes
+
+sqlite_readable: |+
+  SELECT
+   "patients"."id" AS 'ID #',
+  "patients"."first" AS 'First Name',
+  MAX(CASE WHEN "patient_field_values_fields"."section" = 'demographics' AND "patient_field_values_fields"."key" = 'dob' THEN "patient_field_values"."value" END) AS 'Date of Birth',
+  MAX(CASE WHEN "patient_field_values_fields"."section" = 'demographics' AND "patient_field_values_fields"."key" = 'notes' THEN "patient_field_values"."value" END) AS 'Demographic Notes',
+  MAX(CASE WHEN "patient_field_values_fields"."section" = 'demographics' AND "patient_field_values_fields"."key" = 'drivers_license' THEN "patient_field_values"."value" END) AS 'Drivers License #',
+  MAX(CASE WHEN "patient_field_values_fields"."section" = 'contact' AND "patient_field_values_fields"."key" = 'notes' THEN "patient_field_values"."value" END) AS 'Contact Notes'
+  FROM "patients" "patients"
+  LEFT OUTER JOIN "patient_field_values" "patient_field_values" ON "patient_field_values"."patient_id" = "patients"."id"
+  LEFT OUTER JOIN "fields" "patient_field_values_fields" ON "patient_field_values_fields"."id" = "patient_field_values"."field_id"
+  GROUP BY "patients"."id", "patients"."first"
+sqlite_not_readable: |+
+  SELECT
+   "t0"."id" AS 'c0',
+  "t0"."first" AS 'c1',
+  MAX(CASE WHEN "t2"."section" = 'demographics' AND "t2"."key" = 'dob' THEN "t1"."value" END) AS 'c2',
+  MAX(CASE WHEN "t2"."section" = 'demographics' AND "t2"."key" = 'notes' THEN "t1"."value" END) AS 'c3',
+  MAX(CASE WHEN "t2"."section" = 'demographics' AND "t2"."key" = 'drivers_license' THEN "t1"."value" END) AS 'c4',
+  MAX(CASE WHEN "t2"."section" = 'contact' AND "t2"."key" = 'notes' THEN "t1"."value" END) AS 'c5'
+  FROM "patients" "t0"
+  LEFT OUTER JOIN "patient_field_values" "t1" ON "t1"."patient_id" = "t0"."id"
+  LEFT OUTER JOIN "fields" "t2" ON "t2"."id" = "t1"."field_id"
+  GROUP BY "t0"."id", "t0"."first"
+mysql_readable: |+
+  SELECT
+   `patients`.`id` AS 'ID #',
+  `patients`.`first` AS 'First Name',
+  MAX(CASE WHEN `patient_field_values_fields`.`section` = 'demographics' AND `patient_field_values_fields`.`key` = 'dob' THEN `patient_field_values`.`value` END) AS 'Date of Birth',
+  MAX(CASE WHEN `patient_field_values_fields`.`section` = 'demographics' AND `patient_field_values_fields`.`key` = 'notes' THEN `patient_field_values`.`value` END) AS 'Demographic Notes',
+  MAX(CASE WHEN `patient_field_values_fields`.`section` = 'demographics' AND `patient_field_values_fields`.`key` = 'drivers_license' THEN `patient_field_values`.`value` END) AS 'Drivers License #',
+  MAX(CASE WHEN `patient_field_values_fields`.`section` = 'contact' AND `patient_field_values_fields`.`key` = 'notes' THEN `patient_field_values`.`value` END) AS 'Contact Notes'
+  FROM `patients` `patients`
+  LEFT OUTER JOIN `patient_field_values` `patient_field_values` ON `patient_field_values`.`patient_id` = `patients`.`id`
+  LEFT OUTER JOIN `fields` `patient_field_values_fields` ON `patient_field_values_fields`.`id` = `patient_field_values`.`field_id`
+  GROUP BY `patients`.`id`, `patients`.`first`
+mysql_not_readable: |+
+  SELECT
+   `t0`.`id` AS 'c0',
+  `t0`.`first` AS 'c1',
+  MAX(CASE WHEN `t2`.`section` = 'demographics' AND `t2`.`key` = 'dob' THEN `t1`.`value` END) AS 'c2',
+  MAX(CASE WHEN `t2`.`section` = 'demographics' AND `t2`.`key` = 'notes' THEN `t1`.`value` END) AS 'c3',
+  MAX(CASE WHEN `t2`.`section` = 'demographics' AND `t2`.`key` = 'drivers_license' THEN `t1`.`value` END) AS 'c4',
+  MAX(CASE WHEN `t2`.`section` = 'contact' AND `t2`.`key` = 'notes' THEN `t1`.`value` END) AS 'c5'
+  FROM `patients` `t0`
+  LEFT OUTER JOIN `patient_field_values` `t1` ON `t1`.`patient_id` = `t0`.`id`
+  LEFT OUTER JOIN `fields` `t2` ON `t2`.`id` = `t1`.`field_id`
+  GROUP BY `t0`.`id`, `t0`.`first`

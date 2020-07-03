@@ -1,3 +1,14 @@
+# 2.1.0 (TBD)
+
+### Additions:
+
+* Implemented Dbee::Query::Field#aggregator
+* Implemented Dbee::Query::Field#filters
+
+### Changes:
+
+* Bumped minimum Ruby version to 2.5
+
 # 2.0.4 (February 13th, 2020)
 
 * use Arel#in for Equal filters when there is more than one value
