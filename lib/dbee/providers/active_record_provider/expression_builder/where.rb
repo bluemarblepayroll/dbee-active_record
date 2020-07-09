@@ -50,15 +50,21 @@ module Dbee
           private_constant :FILTER_EVALUATORS
 
           def make_predicates(filter, arel_column, values)
-            if filter.is_a?(Query::Filters::Equals) && values.length > 1
+            if use_in?(filter, values)
               [arel_column.in(values)]
-            elsif filter.is_a?(Query::Filters::NotEquals) && values.length > 1
+            elsif use_not_in?(filter, values)
               [arel_column.not_in(values)]
-            elsif values.length.positive?
-              make_or_predicates(filter, arel_column, values)
             else
-              []
+              make_or_predicates(filter, arel_column, values)
             end
+          end
+
+          def use_in?(filter, values)
+            filter.is_a?(Query::Filters::Equals) && values.length > 1
+          end
+
+          def use_not_in?(filter, values)
+            filter.is_a?(Query::Filters::NotEquals) && values.length > 1
           end
 
           def make_or_predicates(filter, arel_column, values)
