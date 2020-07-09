@@ -19,10 +19,14 @@ module Dbee
             # If the filter has a value of nil, then simply return an IS NULL predicate
             return make_is_null_predicate(arel_column) unless filter.value
 
-            values     = Array(filter.value).flatten
-            predicates = values.include?(nil) ? [make_is_null_predicate(arel_column)] : []
-            predicates += make_predicates(filter, arel_column, values)
+            values = Array(filter.value).flatten
 
+            # This logic helps ensure that if a null exists that it translates to an IS NULL
+            # predicate and does not get put into an in or not_in clause.
+            predicates = values.include?(nil) ? [make_is_null_predicate(arel_column)] : []
+            predicates += make_predicates(filter, arel_column, values - [nil])
+
+            # Chain all predicates together
             predicates.inject(predicates.shift) do |memo, predicate|
               memo.or(predicate)
             end
@@ -46,18 +50,20 @@ module Dbee
           private_constant :FILTER_EVALUATORS
 
           def make_predicates(filter, arel_column, values)
-            values -= [nil]
-
             if filter.is_a?(Query::Filters::Equals) && values.length > 1
               [arel_column.in(values)]
             elsif filter.is_a?(Query::Filters::NotEquals) && values.length > 1
               [arel_column.not_in(values)]
             elsif values.length.positive?
-              values.map do |value|
-                make_predicate(arel_column, filter.class, value)
-              end
+              make_or_predicates(filter, arel_column, values)
             else
               []
+            end
+          end
+
+          def make_or_predicates(filter, arel_column, values)
+            values.map do |value|
+              make_predicate(arel_column, filter.class, value)
             end
           end
 
