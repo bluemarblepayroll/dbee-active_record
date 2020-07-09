@@ -67,8 +67,8 @@ sqlite_readable: |+
   "theaters"."name" LIKE 'A%' AND
   "theaters"."name" LIKE '%m%' AND
   "theaters"."active" = 'false' AND
-  "theaters"."active" IN ('t', 'f', NULL) AND
-  "theaters"."inspected" IN ('f', 't', NULL) AND
+  ("theaters"."active" IS NULL OR "theaters"."active" IN ('t', 'f')) AND
+  ("theaters"."inspected" IS NULL OR "theaters"."inspected" IN ('f', 't')) AND
   "theaters"."created_at" <= '2019-03-04' AND
   "theaters"."created_at" < '2018-03-04' AND
   "theaters"."created_at" >= '2001-03-04' AND
@@ -85,8 +85,8 @@ sqlite_not_readable: |+
   "t0"."name" LIKE 'A%' AND
   "t0"."name" LIKE '%m%' AND
   "t0"."active" = 'false' AND
-  "t0"."active" IN ('t', 'f', NULL) AND
-  "t0"."inspected" IN ('f', 't', NULL) AND
+  ("t0"."active" IS NULL OR "t0"."active" IN ('t', 'f')) AND
+  ("t0"."inspected" IS NULL OR "t0"."inspected" IN ('f', 't')) AND
   "t0"."created_at" <= '2019-03-04' AND
   "t0"."created_at" < '2018-03-04' AND
   "t0"."created_at" >= '2001-03-04' AND
@@ -103,8 +103,8 @@ mysql_readable: |+
   `theaters`.`name` LIKE 'A%' AND
   `theaters`.`name` LIKE '%m%' AND
   `theaters`.`active` = 'false' AND
-  `theaters`.`active` IN (TRUE, FALSE, NULL) AND
-  `theaters`.`inspected` IN (FALSE, TRUE, NULL) AND
+  (`theaters`.`active` IS NULL OR `theaters`.`active` IN (TRUE, FALSE)) AND
+  (`theaters`.`inspected` IS NULL OR `theaters`.`inspected` IN (FALSE, TRUE)) AND
   `theaters`.`created_at` <= '2019-03-04' AND
   `theaters`.`created_at` < '2018-03-04' AND
   `theaters`.`created_at` >= '2001-03-04' AND
@@ -121,8 +121,8 @@ mysql_not_readable: |+
   `t0`.`name` LIKE 'A%' AND
   `t0`.`name` LIKE '%m%' AND
   `t0`.`active` = 'false' AND
-  `t0`.`active` IN (TRUE, FALSE, NULL) AND
-  `t0`.`inspected` IN (FALSE, TRUE, NULL) AND
+  (`t0`.`active` IS NULL OR `t0`.`active` IN (TRUE, FALSE)) AND
+  (`t0`.`inspected` IS NULL OR `t0`.`inspected` IN (FALSE, TRUE)) AND
   `t0`.`created_at` <= '2019-03-04' AND
   `t0`.`created_at` < '2018-03-04' AND
   `t0`.`created_at` >= '2001-03-04' AND

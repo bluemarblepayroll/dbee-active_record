@@ -16,14 +16,15 @@ module Dbee
           include Singleton
 
           def make(filter, arel_column)
-            values = normalize(filter.value)
+            # If the filter has a value of nil, then simply return an IS NULL predicate
+            return make_is_null_predicate(arel_column) unless filter.value
 
-            if filter.is_a?(Query::Filters::Equals) && values.length > 1
-              arel_column.in(values)
-            elsif filter.is_a?(Query::Filters::NotEquals) && values.length > 1
-              arel_column.not_in(values)
-            else
-              use_or(filter, arel_column)
+            values     = Array(filter.value).flatten
+            predicates = values.include?(nil) ? [make_is_null_predicate(arel_column)] : []
+            predicates += make_predicates(filter, arel_column, values)
+
+            predicates.inject(predicates.shift) do |memo, predicate|
+              memo.or(predicate)
             end
           end
 
@@ -44,22 +45,32 @@ module Dbee
 
           private_constant :FILTER_EVALUATORS
 
-          def normalize(value)
-            value ? Array(value).flatten : [nil]
+          def make_predicates(filter, arel_column, values)
+            values -= [nil]
+
+            if filter.is_a?(Query::Filters::Equals) && values.length > 1
+              [arel_column.in(values)]
+            elsif filter.is_a?(Query::Filters::NotEquals) && values.length > 1
+              [arel_column.not_in(values)]
+            elsif values.length.positive?
+              values.map do |value|
+                make_predicate(arel_column, filter.class, value)
+              end
+            else
+              []
+            end
           end
 
-          def use_or(filter, arel_column)
-            predicates = normalize(filter.value).map do |coerced_value|
-              method = FILTER_EVALUATORS[filter.class]
+          def make_predicate(arel_column, filter_class, value)
+            method = FILTER_EVALUATORS[filter_class]
 
-              raise ArgumentError, "cannot compile filter: #{filter}" unless method
+            raise ArgumentError, "cannot compile filter: #{filter}" unless method
 
-              method.call(arel_column, coerced_value)
-            end
+            method.call(arel_column, value)
+          end
 
-            predicates.inject(predicates.shift) do |memo, predicate|
-              memo.or(predicate)
-            end
+          def make_is_null_predicate(arel_column)
+            make_predicate(arel_column, Query::Filters::Equals, nil)
           end
         end
       end
