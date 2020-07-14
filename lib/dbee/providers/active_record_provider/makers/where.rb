@@ -10,9 +10,9 @@
 module Dbee
   module Providers
     class ActiveRecordProvider
-      module Makers
+      module Makers # :nodoc: all
         # Derives Arel#where predicates.
-        class Where # :nodoc: all
+        class Where
           include Singleton
 
           def make(filter, arel_column)

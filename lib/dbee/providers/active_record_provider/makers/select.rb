@@ -10,9 +10,9 @@
 module Dbee
   module Providers
     class ActiveRecordProvider
-      module Makers
+      module Makers # :nodoc: all
         # Derives Arel#project predicates.
-        class Select # :nodoc: all
+        class Select
           attr_reader :alias_maker
 
           def initialize(alias_maker)

@@ -10,9 +10,9 @@
 module Dbee
   module Providers
     class ActiveRecordProvider
-      module Makers
+      module Makers # :nodoc: all
         # Derives Arel#order predicates.
-        class Order # :nodoc: all
+        class Order
           include Singleton
 
           def make(sorter, arel_column)

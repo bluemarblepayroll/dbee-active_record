@@ -10,9 +10,9 @@
 module Dbee
   module Providers
     class ActiveRecordProvider
-      module Makers
+      module Makers # :nodoc: all
         # Can derive constraints for Arel table JOIN statements.
-        class Constraint # :nodoc: all
+        class Constraint
           include Singleton
 
           def make(constraints, table, previous_table)

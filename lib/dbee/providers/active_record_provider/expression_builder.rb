@@ -13,7 +13,7 @@ module Dbee
   module Providers
     class ActiveRecordProvider
       # This class can generate an Arel expression tree.
-      class ExpressionBuilder < Maker
+      class ExpressionBuilder < Maker # :nodoc: all
         class MissingConstraintError < StandardError; end
 
         def initialize(model, table_alias_maker, column_alias_maker)
