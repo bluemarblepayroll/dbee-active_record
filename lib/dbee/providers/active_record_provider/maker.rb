@@ -15,6 +15,7 @@ require_relative 'makers/where'
 module Dbee
   module Providers
     class ActiveRecordProvider
+      # This class composes all the maker instances into one for use together.
       class Maker # :nodoc: all
         def initialize(column_alias_maker)
           @column_alias_maker = column_alias_maker
