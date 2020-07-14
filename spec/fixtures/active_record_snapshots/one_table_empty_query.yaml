@@ -1,0 +1,10 @@
+model_name: Patients
+query:
+sqlite_readable: |+
+  SELECT "patients".* FROM "patients" "patients"
+sqlite_not_readable: |+
+  SELECT "t0".* FROM "patients" "t0"
+mysql_readable: |+
+  SELECT `patients`.* FROM `patients` `patients`
+mysql_not_readable: |+
+  SELECT `t0`.* FROM `patients` `t0`

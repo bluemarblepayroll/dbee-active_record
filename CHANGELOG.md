@@ -1,9 +1,10 @@
-# 2.1.0 (TBD)
+# 2.1.1 (TBD)
 
 ### Additions:
 
 * Implemented Dbee::Query::Field#aggregator
 * Implemented Dbee::Query::Field#filters
+* Implemented base case when a Dbee::Query contains no fields
 
 ### Changes:
 

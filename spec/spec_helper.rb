@@ -50,3 +50,7 @@ end
 def file_read(*filename)
   File.open(File.join(*filename), 'r:bom|utf-8').read
 end
+
+def models
+  yaml_fixture('models.yaml')
+end

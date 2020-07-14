@@ -11,8 +11,6 @@ require 'spec_helper'
 require 'db_helper'
 
 describe Dbee::Providers::ActiveRecordProvider do
-  let(:models) { yaml_fixture('models.yaml') }
-
   describe '#sql' do
     before(:all) do
       connect_to_db(:sqlite)
@@ -176,8 +174,7 @@ describe Dbee::Providers::ActiveRecordProvider do
       let(:model)    { Dbee::Model.make(models['Patients']) }
 
       it 'executes correct SQL aggregate functions' do
-        sql = described_class.new.sql(model, query)
-
+        sql     = described_class.new.sql(model, query)
         results = ActiveRecord::Base.connection.execute(sql)
 
         expect(results[0]).to include(

@@ -23,14 +23,16 @@ module Dbee
           @model              = model
           @table_alias_maker  = table_alias_maker
           @column_alias_maker = column_alias_maker
-          @requires_group_by  = false
-          @group_by_columns   = []
+          @select_maker       = Select.instance
 
           clear
         end
 
         def clear
-          @base_table = make_table(model.table, model.name)
+          @requires_group_by  = false
+          @group_by_columns   = []
+          @base_table         = make_table(model.table, model.name)
+          @select_all         = true
 
           build(base_table)
 
@@ -38,6 +40,8 @@ module Dbee
         end
 
         def add(query)
+          return self unless query
+
           query.fields.each   { |field| add_field(field) }
           query.sorters.each  { |sorter| add_sorter(sorter) }
           query.filters.each  { |filter| add_filter(filter) }
@@ -54,6 +58,8 @@ module Dbee
             @group_by_columns = []
           end
 
+          return statement.project(Select.instance.star(base_table)).to_sql if select_all
+
           statement.to_sql
         end
 
@@ -65,7 +71,8 @@ module Dbee
                     :table_alias_maker,
                     :column_alias_maker,
                     :requires_group_by,
-                    :group_by_columns
+                    :group_by_columns,
+                    :select_all
 
         def tables
           @tables ||= {}
@@ -108,6 +115,7 @@ module Dbee
         end
 
         def add_field(field)
+          @select_all                 = false
           arel_value_column           = add_key_path(field.key_path)
           arel_key_columns_to_filters = add_filter_key_paths(field.filters)
 

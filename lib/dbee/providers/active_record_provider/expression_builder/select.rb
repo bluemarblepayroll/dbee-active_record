@@ -15,6 +15,10 @@ module Dbee
         class Select
           include Singleton
 
+          def star(arel_table)
+            arel_table[Arel.star]
+          end
+
           def make(field, arel_key_nodes_to_filters, arel_value_node, alias_maker)
             column_alias = quote(alias_maker.make(field.display))
             predicate    = expression(field, arel_key_nodes_to_filters, arel_value_node)
