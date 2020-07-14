@@ -10,7 +10,7 @@
 module Dbee
   module Providers
     class ActiveRecordProvider
-      class ExpressionBuilder
+      module Makers
         # Derives Arel#project predicates.
         class Select # :nodoc: all
           attr_reader :alias_maker

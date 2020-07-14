@@ -10,7 +10,7 @@
 module Dbee
   module Providers
     class ActiveRecordProvider
-      class ExpressionBuilder
+      module Makers
         # Derives Arel#order predicates.
         class Order # :nodoc: all
           include Singleton

@@ -10,7 +10,7 @@
 module Dbee
   module Providers
     class ActiveRecordProvider
-      class ExpressionBuilder
+      module Makers
         # Derives Arel#where predicates.
         class Where # :nodoc: all
           include Singleton

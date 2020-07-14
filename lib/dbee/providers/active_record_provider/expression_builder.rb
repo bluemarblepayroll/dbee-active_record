@@ -7,22 +7,20 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-require_relative 'expression_builder/constraint'
-require_relative 'expression_builder/order'
-require_relative 'expression_builder/select'
-require_relative 'expression_builder/where'
+require_relative 'maker'
 
 module Dbee
   module Providers
     class ActiveRecordProvider
       # This class can generate an Arel expression tree.
-      class ExpressionBuilder
+      class ExpressionBuilder < Maker
         class MissingConstraintError < StandardError; end
 
         def initialize(model, table_alias_maker, column_alias_maker)
-          @model              = model
-          @table_alias_maker  = table_alias_maker
-          @column_alias_maker = column_alias_maker
+          super(column_alias_maker)
+
+          @model             = model
+          @table_alias_maker = table_alias_maker
 
           clear
         end
@@ -68,26 +66,9 @@ module Dbee
                     :statement,
                     :model,
                     :table_alias_maker,
-                    :column_alias_maker,
                     :requires_group_by,
                     :group_by_columns,
                     :select_all
-
-        def select_maker
-          @select_maker ||= Select.new(column_alias_maker)
-        end
-
-        def constraint_maker
-          Constraint.instance
-        end
-
-        def order_maker
-          Order.instance
-        end
-
-        def where_maker
-          Where.instance
-        end
 
         def tables
           @tables ||= {}
