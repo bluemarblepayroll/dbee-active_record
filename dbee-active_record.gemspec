@@ -42,15 +42,15 @@ Gem::Specification.new do |s|
     end
 
   s.add_dependency('activerecord', activerecord_version)
-  s.add_dependency('dbee', '=2.1.0.pre.alpha')
+  s.add_dependency('dbee', '~>2', '>=2.1.0')
 
   s.add_development_dependency('guard-rspec', '~>4.7')
   s.add_development_dependency('mysql2', '~>0.5')
   s.add_development_dependency('pry', '~>0')
   s.add_development_dependency('rake', '~> 13')
   s.add_development_dependency('rspec', '~> 3.8')
-  s.add_development_dependency('rubocop', '~>0.81.0')
-  s.add_development_dependency('simplecov', '~>0.17.0')
+  s.add_development_dependency('rubocop', '~>0.88.0')
+  s.add_development_dependency('simplecov', '~>0.18.5')
   s.add_development_dependency('simplecov-console', '~>0.7.0')
   s.add_development_dependency('sqlite3', '~>1')
 end

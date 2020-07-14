@@ -1,14 +1,9 @@
 AllCops:
   TargetRubyVersion: 2.5
+  NewCops: enable
 
 Layout/LineLength:
   Max: 100
-
-Lint/RaiseException:
-  Enabled: True
-
-Lint/StructNewOverride:
-  Enabled: True
 
 Metrics/AbcSize:
   Max: 16
@@ -34,12 +29,3 @@ Metrics/MethodLength:
   Max: 25
   Exclude:
     - spec/db_helper.rb
-
-Style/HashEachMethods:
-  Enabled: True
-
-Style/HashTransformKeys:
-  Enabled: True
-
-Style/HashTransformValues:
-  Enabled: True
