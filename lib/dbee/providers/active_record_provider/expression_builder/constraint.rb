@@ -12,7 +12,7 @@ module Dbee
     class ActiveRecordProvider
       class ExpressionBuilder
         # Can derive constraints for Arel table JOIN statements.
-        class Constraint
+        class Constraint # :nodoc: all
           include Singleton
 
           def make(constraints, table, previous_table)

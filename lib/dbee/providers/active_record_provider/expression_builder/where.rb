@@ -12,7 +12,7 @@ module Dbee
     class ActiveRecordProvider
       class ExpressionBuilder
         # Derives Arel#where predicates.
-        class Where
+        class Where # :nodoc: all
           include Singleton
 
           def make(filter, arel_column)

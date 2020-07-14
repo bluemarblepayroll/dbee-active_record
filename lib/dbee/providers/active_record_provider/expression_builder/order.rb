@@ -12,7 +12,7 @@ module Dbee
     class ActiveRecordProvider
       class ExpressionBuilder
         # Derives Arel#order predicates.
-        class Order
+        class Order # :nodoc: all
           include Singleton
 
           def make(sorter, arel_column)

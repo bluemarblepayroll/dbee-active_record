@@ -12,14 +12,20 @@ module Dbee
     class ActiveRecordProvider
       class ExpressionBuilder
         # Derives Arel#project predicates.
-        class Select
-          include Singleton
+        class Select # :nodoc: all
+          attr_reader :alias_maker
+
+          def initialize(alias_maker)
+            @alias_maker = alias_maker
+
+            freeze
+          end
 
           def star(arel_table)
             arel_table[Arel.star]
           end
 
-          def make(field, arel_key_nodes_to_filters, arel_value_node, alias_maker)
+          def make(field, arel_key_nodes_to_filters, arel_value_node)
             column_alias = quote(alias_maker.make(field.display))
             predicate    = expression(field, arel_key_nodes_to_filters, arel_value_node)
             predicate    = aggregate(field, predicate)

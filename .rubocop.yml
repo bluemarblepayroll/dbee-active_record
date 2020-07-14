@@ -23,7 +23,7 @@ Metrics/BlockLength:
     - dbee-active_record.gemspec
 
 Metrics/ClassLength:
-  Max: 130
+  Max: 140
 
 Metrics/MethodLength:
   Max: 25

@@ -23,7 +23,6 @@ module Dbee
           @model              = model
           @table_alias_maker  = table_alias_maker
           @column_alias_maker = column_alias_maker
-          @select_maker       = Select.instance
 
           clear
         end
@@ -58,7 +57,7 @@ module Dbee
             @group_by_columns = []
           end
 
-          return statement.project(Select.instance.star(base_table)).to_sql if select_all
+          return statement.project(select_maker.star(base_table)).to_sql if select_all
 
           statement.to_sql
         end
@@ -74,6 +73,22 @@ module Dbee
                     :group_by_columns,
                     :select_all
 
+        def select_maker
+          @select_maker ||= Select.new(column_alias_maker)
+        end
+
+        def constraint_maker
+          Constraint.instance
+        end
+
+        def order_maker
+          Order.instance
+        end
+
+        def where_maker
+          Where.instance
+        end
+
         def tables
           @tables ||= {}
         end
@@ -87,7 +102,7 @@ module Dbee
 
           key_path    = filter.key_path
           arel_column = key_paths_to_arel_columns[key_path]
-          predicate   = Where.instance.make(filter, arel_column)
+          predicate   = where_maker.make(filter, arel_column)
 
           build(statement.where(predicate))
 
@@ -99,7 +114,7 @@ module Dbee
 
           key_path    = sorter.key_path
           arel_column = key_paths_to_arel_columns[key_path]
-          predicate   = Order.instance.make(sorter, arel_column)
+          predicate   = order_maker.make(sorter, arel_column)
 
           build(statement.order(predicate))
 
@@ -119,11 +134,10 @@ module Dbee
           arel_value_column           = add_key_path(field.key_path)
           arel_key_columns_to_filters = add_filter_key_paths(field.filters)
 
-          predicate = Select.instance.make(
+          predicate = select_maker.make(
             field,
             arel_key_columns_to_filters,
-            arel_value_column,
-            column_alias_maker
+            arel_value_column
           )
 
           build(statement.project(predicate))
@@ -159,7 +173,7 @@ module Dbee
         def table(name, model, previous_table)
           table = make_table(model.table, name)
 
-          on = Constraint.instance.make(model.constraints, table, previous_table)
+          on = constraint_maker.make(model.constraints, table, previous_table)
 
           raise MissingConstraintError, "for: #{name}" unless on
 
