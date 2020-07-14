@@ -106,6 +106,8 @@ def load_schema
       t.timestamps
     end
 
+    add_index :fields, %i[section key], unique: true
+
     create_table :patients do |t|
       t.column :first,  :string
       t.column :middle, :string
@@ -114,14 +116,16 @@ def load_schema
     end
 
     create_table :patient_field_values do |t|
-      t.column :patient_id, :integer
-      t.column :field_id,   :integer
+      t.column :patient_id, :integer, foreign_key: true
+      t.column :field_id,   :integer, foreign_key: true
       t.column :value,      :string
       t.timestamps
     end
 
+    add_index :patient_field_values, %i[patient_id field_id], unique: true
+
     create_table :patient_payments do |t|
-      t.column :patient_id, :integer
+      t.column :patient_id, :integer, foreign_key: true
       t.column :amount,     :decimal
       t.timestamps
     end
