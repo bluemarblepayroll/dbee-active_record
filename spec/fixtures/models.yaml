@@ -58,6 +58,12 @@ Theaters, Members, and Movies:
             - type: static
               name: genre
               value: comedy
+    - name: ticket_prices
+      table: ticket_prices
+      constraints:
+        - type: reference
+          parent: id
+          name: theater_id
 Reverse Polymorphic Example:
   # In this example, an animal has a toy, but that toy is either a dog or cat toy, depending on
   # the type of the animal.  So for this to work in this direction, static constraints pointed
