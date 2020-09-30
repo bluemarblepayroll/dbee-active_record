@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+#
+# Copyright (c) 2018-present, Blue Marble Payroll, LLC
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+#
+
+# Used to reset and persist unit test data to a database. Note that the
+# database needs to exist for this script to work. This does not handle the
+# initial bootstrap case.
+
+require 'bundler/setup'
+require 'dbee/providers/active_record_provider'
+require_relative '../spec/db_helper'
+
+config_name = ARGV[0] || 'mysql'
+
+connection_pool = connect_to_db(config_name)
+connection_config = connection_pool.spec.config
+database = connection_config[:database]
+adapter = connection_config[:adapter]
+
+puts "Going to reset database #{database}."
+
+if adapter == 'mysql2'
+  connection_pool.with_connection do |connection|
+    drop_statement = "DROP DATABASE #{connection.quote_table_name(database)}"
+    puts drop_statement
+    connection.execute(drop_statement)
+
+    create_statement = "CREATE DATABASE #{connection.quote_table_name(database)}"
+    puts create_statement
+    connection.execute(create_statement)
+  end
+end
+
+# A new connection pool is needed as the database has been recreated:
+connection_pool = connect_to_db(config_name)
+connection_pool.with_connection do |_connection|
+  puts 'Loading schema:'
+  load_schema
+
+  puts 'Loading data:'
+  load_data
+end

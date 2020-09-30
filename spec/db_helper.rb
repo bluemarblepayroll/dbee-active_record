@@ -7,7 +7,9 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-# Enable logging using something like:
+require_relative 'spec_helper'
+
+# Enable SQL logging using:
 # ActiveRecord::Base.logger = Logger.new(STDERR)
 
 class Field < ActiveRecord::Base
@@ -31,6 +33,16 @@ class PatientPayment < ActiveRecord::Base
   belongs_to :patient
 end
 
+class Theater < ActiveRecord::Base
+  has_many :ticket_prices
+
+  accepts_nested_attributes_for :ticket_prices
+end
+
+class TicketPrice < ActiveRecord::Base
+  belongs_to :theater
+end
+
 def connect_to_db(name)
   config = yaml_file_read('spec', 'config', 'database.yaml')[name.to_s]
   ActiveRecord::Base.establish_connection(config)
@@ -46,6 +58,18 @@ def load_schema
       t.column :inspected, :boolean
       t.timestamps
     end
+
+    # Intentionally oversimplified. An actual movie theater price model would
+    # have special matinee, child, senior, and many other types of tickets.
+    create_table :ticket_prices do |t|
+      t.column :theater_id,     :integer
+      t.column :price_usd,      :decimal
+      t.column :effective_date, :date
+      t.timestamps
+    end
+
+    # Only one price an be in effect per theater on a given day.
+    add_index :ticket_prices, %i[theater_id effective_date], unique: true
 
     create_table :members do |t|
       t.column :tid,            :integer
@@ -133,6 +157,11 @@ def load_schema
 end
 
 def load_data
+  load_patient_data
+  load_movie_data
+end
+
+def load_patient_data
   demo_dob_field              = Field.create!(section: 'demographics', key: 'dob')
   demo_drivers_license_field  = Field.create!(section: 'demographics', key: 'drivers_license')
   demo_notes_field            = Field.create!(section: 'demographics', key: 'notes')
@@ -195,6 +224,54 @@ def load_data
         field: contact_notes_field,
         value: 'Call anytime!!'
       }
+    ]
+  )
+end
+
+def load_movie_data
+  Theater.create!(
+    name: 'Small Town Movies',
+    active: true,
+    inspected: true,
+    ticket_prices_attributes: [
+      { price_usd: 5, effective_date: '2018-01-01' },
+      { price_usd: 6, effective_date: '2019-01-01' },
+      { price_usd: 7, effective_date: '2020-01-01' },
+      { price_usd: 5, effective_date: '2020-04-01' },
+      { price_usd: 7, effective_date: '2021-04-01' }
+    ]
+  )
+
+  Theater.create!(
+    name: 'Big City Megaplex',
+    active: true,
+    inspected: true,
+    ticket_prices_attributes: [
+      { price_usd: 10, effective_date: '2018-01-01' },
+      { price_usd: 12, effective_date: '2019-01-31' },
+      { price_usd: 14, effective_date: '2020-02-01' }
+    ]
+  )
+
+  Theater.create!(
+    name: 'Out of Business Theater',
+    active: false,
+    inspected: true,
+    ticket_prices_attributes: [
+      { price_usd: 10, effective_date: '2015-01-01' },
+      { price_usd: 12, effective_date: '2016-01-01' },
+      { price_usd: 14, effective_date: '2017-02-01' }
+    ]
+  )
+
+  Theater.create!(
+    name: 'Suburban Cinema',
+    active: true,
+    inspected: false,
+    ticket_prices_attributes: [
+      { price_usd: 9,  effective_date: '2018-01-01' },
+      { price_usd: 10, effective_date: '2019-01-01' },
+      { price_usd: 11, effective_date: '2020-02-01' }
     ]
   )
 end

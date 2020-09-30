@@ -111,7 +111,7 @@ describe Dbee::Providers::ActiveRecordProvider do
     before(:all) do
       connect_to_db(:sqlite)
       load_schema
-      load_data
+      load_patient_data
     end
 
     describe 'pivoting' do
