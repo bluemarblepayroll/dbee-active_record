@@ -1,6 +1,7 @@
 env:
   global:
     - CC_TEST_REPORTER_ID=036a8fd92cf0c323c9704c041015837d14889e47de936bab18287626ff3372c1
+    - DISABLE_RSPEC_FOCUS=true
 language: ruby
 services:
   - mysql
