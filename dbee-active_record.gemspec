@@ -55,4 +55,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency('simplecov', '~>0.19.0')
   s.add_development_dependency('simplecov-console', '~>0.7.0')
   s.add_development_dependency('sqlite3', '~>1')
+  s.add_development_dependency('terminal-notifier-guard')
 end
