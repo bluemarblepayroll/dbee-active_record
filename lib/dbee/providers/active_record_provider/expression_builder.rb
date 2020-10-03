@@ -36,8 +36,34 @@ module Dbee
           add_partitioners(base_table, model.partitioners)
         end
 
+        # TODO: remove these after refactoring:
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
         def add(query)
           return self unless query
+
+          subqueries = query.given.map do |subquery|
+            model_path = [subquery.model.to_s]
+            ExpressionBuilder.new(
+              # TODO: this should probably pass in a proper key path to support
+              # a subquery on a model beyond the first level of the model tree.
+              # ALSO, it should find the result which matches the key path
+              # instead of by model name.
+              model.ancestors!(model_path)[model_path],
+              table_alias_maker,
+              column_alias_maker
+            ).add(subquery)
+            # This returns an Arel::Nodes::TableAlias
+            # statement.as(subquery.name.to_s)
+            # Then that new "table" name needs to be appended to the model data
+            # structure with something like:
+            # model.append(subquery.name)
+          end
+
+          if subqueries.any?
+            puts 'subqueries:'
+            puts subqueries.map(&:to_sql).join("\n\n")
+          end
 
           query.fields.each   { |field| add_field(field) }
           query.sorters.each  { |sorter| add_sorter(sorter) }
@@ -47,6 +73,8 @@ module Dbee
 
           self
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def to_sql
           if requires_group_by

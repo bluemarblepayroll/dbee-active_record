@@ -216,7 +216,7 @@ describe Dbee::Providers::ActiveRecordProvider do
       load_movie_data
     end
 
-    describe 'subquery sanity check' do
+    describe 'subquery as a top level query as a sanity check' do
       let(:query) do
         # select theaters.name, theater_id, max(effective_date)
         # from theaters
@@ -261,6 +261,96 @@ describe Dbee::Providers::ActiveRecordProvider do
           'name' => 'Big City Megaplex',
           'id' => 2,
           'ticket_prices_effective_date' => '2019-01-31'
+        )
+      end
+    end
+
+    describe 'one level of subquery' do
+      let(:query) do
+        # SELECT
+        #   theaters.name,
+        #   ticket_prices.effective_date,
+        #   ticket_prices.price_usd
+        # FROM
+        #   theaters
+        #   LEFT JOIN ticket_prices ON theaters.id = ticket_prices.theater_id
+        #   LEFT JOIN (
+        #     SELECT
+        #       theater_id,
+        #       max(effective_date) AS effective_date
+        #     FROM
+        #       ticket_prices
+        #     WHERE
+        #       effective_date <= '2020-01-01'
+        #     GROUP BY
+        #       theater_id
+        #     ) AS effective_ticket_prices ON
+        #       effective_ticket_prices.theater_id = ticket_prices.theater_id
+        #       AND effective_ticket_prices.effective_date = ticket_prices.effective_date
+        # WHERE
+        #   effective_ticket_prices.theater_id IS NOT NULL
+        # ORDER BY
+        #   theaters.name,
+        #   ticket_prices.effective_date;
+        Dbee::Query.make(
+          given: [
+            {
+              model: :ticket_prices,
+              name: :effective_ticket_prices,
+              constraints: [
+                { name: :theater_id, parent: :theater_id },
+                { name: :effective_date, parent: :effective_date }
+              ],
+              fields: [
+                { key_path: :theater_id },
+                { key_path: :effective_date, aggregator: :max }
+              ],
+              filters: [
+                {
+                  key_path: :effective_date,
+                  type: :less_than_or_equal_to,
+                  value: '2020-01-01'
+                }
+              ]
+            }
+          ],
+          fields: [
+            { key_path: :name },
+            { key_path: :'ticket_prices.effective_date' },
+            { key_path: :'ticket_prices.price_usd' }
+          ],
+          filters: [
+            {
+              key_path: :'effective_ticket_prices.theater_id',
+              type: :not_equals,
+              value: nil
+            }
+          ],
+          sorters: [
+            { key_path: :name },
+            { key_path: :'ticket_prices.effective_date' }
+          ],
+          limit: 2
+        )
+      end
+      let(:model) { Dbee::Model.make(models['Theaters, Members, and Movies']) }
+
+      pending 'pivots table rows into columns' do
+        sql = subject.sql(model, query)
+
+        results = ActiveRecord::Base.connection.execute(sql)
+        expect(results.size).to eq(2)
+
+        expect(results[0]).to include(
+          'name' => 'Big City Megaplex',
+          'ticket_prices_effective_date' => '2019-01-31',
+          'price_usd': 12
+        )
+
+        expect(results[1]).to include(
+          'name' => 'Out of Business Theater',
+          'ticket_prices_effective_date' => '2017-02-01',
+          'price_usd': 14
         )
       end
     end

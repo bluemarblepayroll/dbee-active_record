@@ -27,7 +27,8 @@ module Dbee
 
         private
 
-        attr_reader :constraint_maker,
+        attr_reader :column_alias_maker,
+                    :constraint_maker,
                     :order_maker,
                     :select_maker,
                     :where_maker
