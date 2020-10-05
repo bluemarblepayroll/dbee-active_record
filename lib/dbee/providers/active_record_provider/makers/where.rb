@@ -17,7 +17,7 @@ module Dbee
 
           def make(filter, arel_column)
             # If the filter has a value of nil, then simply return an IS NULL predicate
-            return make_is_null_predicate(arel_column) unless filter.value
+            return make_is_null_predicate(arel_column, filter) unless filter.value
 
             values = Array(filter.value).flatten
 
@@ -81,8 +81,9 @@ module Dbee
             method.call(arel_column, value)
           end
 
-          def make_is_null_predicate(arel_column)
-            make_predicate(arel_column, Query::Filters::Equals, nil)
+          def make_is_null_predicate(arel_column, filter = nil)
+            operator = filter&.class || Query::Filters::Equals
+            make_predicate(arel_column, operator, nil)
           end
         end
       end
