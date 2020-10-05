@@ -13,6 +13,9 @@ module Dbee
   module Providers
     class ActiveRecordProvider
       # This class can generate an Arel expression tree.
+
+      # TODO: break up this class
+      # rubocop:disable Metrics/ClassLength
       class ExpressionBuilder < Maker # :nodoc: all
         class MissingConstraintError < StandardError; end
 
@@ -38,13 +41,12 @@ module Dbee
 
         # TODO: remove these after refactoring:
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         def add(query)
           return self unless query
 
-          subqueries = query.given.map do |subquery|
+          query.given.each do |subquery|
             model_path = [subquery.model.to_s]
-            ExpressionBuilder.new(
+            subquery_expression = ExpressionBuilder.new(
               # TODO: this should probably pass in a proper key path to support
               # a subquery on a model beyond the first level of the model tree.
               # ALSO, it should find the result which matches the key path
@@ -53,17 +55,36 @@ module Dbee
               table_alias_maker,
               column_alias_maker
             ).add(subquery)
+
             # This returns an Arel::Nodes::TableAlias
-            # statement.as(subquery.name.to_s)
+            derived_tables[subquery.name.to_s] = subquery_expression.send(:statement)
+                                                                    .as(subquery.name.to_s)
+
             # Then that new "table" name needs to be appended to the model data
-            # structure with something like:
-            # model.append(subquery.name)
+            # structure.
+            # TODO: clean this up and handle more than one level of subquery
+            # and respect encapsulation of Dbee::Model:
+            model.send(:models_by_name)[subquery.model.to_s].append(
+              Dbee::Model.new(
+                name: subquery.name,
+                constraints: subquery.constraints,
+                table: subquery.name
+              )
+            )
+
+            # TODO: clean this up. This is needed so that the grouping can be
+            # added to the Arel statement as a side effect of calling to_sql on
+            # the Expression. The solution is most likely to add some sort of
+            # finalization/apply grouping method to this class to decouple this
+            # from the SQL generation and make things more explicit.
+            subquery_expression.to_sql
           end
 
-          if subqueries.any?
-            puts 'subqueries:'
-            puts subqueries.map(&:to_sql).join("\n\n")
-          end
+          # TODO: this has a side effect of materializing the subqueries in
+          # such a way that is helpful.
+          # if subqueries.any?
+          #   subqueries.map(&:to_sql)
+          # end
 
           query.fields.each   { |field| add_field(field) }
           query.sorters.each  { |sorter| add_sorter(sorter) }
@@ -74,7 +95,6 @@ module Dbee
           self
         end
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def to_sql
           if requires_group_by
@@ -91,15 +111,19 @@ module Dbee
         private
 
         attr_reader :base_table,
-                    :statement,
                     :model,
                     :table_alias_maker,
                     :requires_group_by,
                     :group_by_columns,
-                    :select_all
+                    :select_all,
+                    :statement
 
         def tables
           @tables ||= {}
+        end
+
+        def derived_tables
+          @derived_tables ||= {}
         end
 
         def key_paths_to_arel_columns
@@ -179,8 +203,10 @@ module Dbee
           self
         end
 
+        # TODO: split up this method:
+        # rubocop:disable Metrics/AbcSize
         def table(name, model, previous_table)
-          table = make_table(model.table, name)
+          table = derived_tables[model.table] || make_table(model.table, name)
 
           on = constraint_maker.make(model.constraints, table, previous_table)
 
@@ -193,6 +219,7 @@ module Dbee
 
           tables[name] = table
         end
+        # rubocop:enable Metrics/AbcSize
 
         def traverse_ancestors(ancestors)
           ancestors.each_pair.inject(base_table) do |memo, (name, model)|
@@ -224,5 +251,6 @@ module Dbee
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

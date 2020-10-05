@@ -245,7 +245,7 @@ describe Dbee::Providers::ActiveRecordProvider do
       end
       let(:model) { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 
-      it 'pivots table rows into columns' do
+      it 'returns the expected results' do
         sql = described_class.new.sql(model, query)
 
         results = ActiveRecord::Base.connection.execute(sql)
@@ -321,7 +321,7 @@ describe Dbee::Providers::ActiveRecordProvider do
           ],
           filters: [
             {
-              key_path: :'effective_ticket_prices.theater_id',
+              key_path: :'ticket_prices.effective_ticket_prices.theater_id',
               type: :not_equals,
               value: nil
             }
@@ -335,7 +335,8 @@ describe Dbee::Providers::ActiveRecordProvider do
       end
       let(:model) { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 
-      pending 'pivots table rows into columns' do
+      # TODO: add this to snapshots
+      it 'returns effective ticket prices' do
         sql = subject.sql(model, query)
 
         results = ActiveRecord::Base.connection.execute(sql)
@@ -344,13 +345,13 @@ describe Dbee::Providers::ActiveRecordProvider do
         expect(results[0]).to include(
           'name' => 'Big City Megaplex',
           'ticket_prices_effective_date' => '2019-01-31',
-          'price_usd': 12
+          'ticket_prices_price_usd' => 12
         )
 
         expect(results[1]).to include(
           'name' => 'Out of Business Theater',
           'ticket_prices_effective_date' => '2017-02-01',
-          'price_usd': 14
+          'ticket_prices_price_usd' => 14
         )
       end
     end
