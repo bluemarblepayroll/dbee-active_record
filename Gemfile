@@ -3,6 +3,6 @@
 source 'https://rubygems.org'
 
 # TODO: remove this once dbee updates have been officially released:
-gem 'dbee', git: 'https://github.com/bluemarblepayroll/dbee.git', ref: 'f9416a7'
+gem 'dbee', git: 'https://github.com/bluemarblepayroll/dbee.git', ref: '3ba7474'
 
 gemspec

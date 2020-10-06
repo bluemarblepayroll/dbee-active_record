@@ -41,6 +41,10 @@ describe Dbee::Providers::ActiveRecordProvider do
   end
 
   describe 'snapshot' do
+    def check_pending(expectation)
+      pending expectation['pending'] if expectation.is_a?(Hash) && expectation['pending']
+    end
+
     context 'sql' do
       %w[sqlite mysql].each do |dbms|
         context "using #{dbms}" do
@@ -54,11 +58,14 @@ describe Dbee::Providers::ActiveRecordProvider do
 
               yaml_fixture_files('active_record_snapshots').each_pair do |filename, snapshot|
                 specify File.basename(filename) do
+                  expected_sql = snapshot[key]
+                  check_pending(expected_sql)
+
                   model_name = snapshot['model_name']
                   query = Dbee::Query.make(snapshot['query'])
                   model = Dbee::Model.make(models[model_name])
 
-                  expected_5_sql  = snapshot[key].to_s.chomp.tr("\n", ' ')
+                  expected_5_sql  = expected_sql.to_s.chomp.gsub(/\n\s*/, ' ')
                   expected_6_sql  = expected_5_sql.gsub('  ', ' ').gsub("'t'", '1').gsub("'f'", '0')
                   actual_sql      = described_class.new(readable: readable).sql(model, query)
 
@@ -91,6 +98,8 @@ describe Dbee::Providers::ActiveRecordProvider do
 
               yaml_fixture_files('active_record_snapshots').each_pair do |filename, snapshot|
                 specify File.basename(filename) do
+                  check_pending(snapshot[key])
+
                   model_name = snapshot['model_name']
                   query = Dbee::Query.make(snapshot['query'])
                   model = Dbee::Model.make(models[model_name])
@@ -292,7 +301,7 @@ describe Dbee::Providers::ActiveRecordProvider do
         # ORDER BY
         #   theaters.name,
         #   ticket_prices.effective_date;
-        Dbee::Query.make(
+        query = {
           given: [
             {
               model: :ticket_prices,
@@ -331,7 +340,8 @@ describe Dbee::Providers::ActiveRecordProvider do
             { key_path: :'ticket_prices.effective_date' }
           ],
           limit: 2
-        )
+        }
+        Dbee::Query.make(query)
       end
       let(:model) { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 

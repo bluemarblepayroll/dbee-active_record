@@ -1,0 +1,72 @@
+model_name: Theaters, Members, and Movies
+query:
+  given:
+  - model: ticket_prices
+    name: effective_ticket_prices
+    constraints:
+    - name: theater_id
+      parent: theater_id
+    - name: effective_date
+      parent: effective_date
+    fields:
+    - key_path: theater_id
+    - key_path: effective_date
+      aggregator: max
+    filters:
+    - key_path: effective_date
+      type: less_than_or_equal_to
+      value: '2020-01-01'
+  fields:
+  - key_path: name
+  - key_path: ticket_prices.effective_date
+  - key_path: ticket_prices.price_usd
+  filters:
+  - key_path: ticket_prices.effective_ticket_prices.theater_id
+    type: not_equals
+    value:
+  sorters:
+  - key_path: name
+  - key_path: ticket_prices.effective_date
+  limit: 2
+sqlite_not_readable:
+  pending: need to implement aliasing for subqueries
+sqlite_readable: |+
+  SELECT
+    "theaters"."name" AS 'name',
+    "ticket_prices"."effective_date" AS 'ticket_prices_effective_date',
+    "ticket_prices"."price_usd" AS 'ticket_prices_price_usd'
+  FROM "theaters" "theaters"
+    LEFT OUTER JOIN "ticket_prices" "ticket_prices" ON "ticket_prices"."theater_id" = "theaters"."id"
+    LEFT OUTER JOIN
+      (SELECT
+        "ticket_prices"."theater_id" AS 'theater_id',
+        MAX("ticket_prices"."effective_date") AS 'effective_date'
+      FROM "ticket_prices" "ticket_prices"
+      WHERE "ticket_prices"."effective_date" <= '2020-01-01'
+      GROUP BY "ticket_prices"."theater_id")
+      effective_ticket_prices ON effective_ticket_prices."theater_id" = "ticket_prices"."theater_id"
+      AND effective_ticket_prices."effective_date" = "ticket_prices"."effective_date"
+  WHERE effective_ticket_prices."theater_id" IS NOT NULL
+  ORDER BY "theaters"."name", "ticket_prices"."effective_date"
+  LIMIT 2
+mysql_not_readable:
+  pending: need to implement aliasing for subqueries
+mysql_readable: |+
+  SELECT
+    `theaters`.`name` AS 'name',
+    `ticket_prices`.`effective_date` AS 'ticket_prices_effective_date',
+    `ticket_prices`.`price_usd` AS 'ticket_prices_price_usd'
+  FROM `theaters` `theaters`
+    LEFT OUTER JOIN `ticket_prices` `ticket_prices` ON `ticket_prices`.`theater_id` = `theaters`.`id`
+    LEFT OUTER JOIN
+      (SELECT
+        `ticket_prices`.`theater_id` AS 'theater_id',
+        MAX(`ticket_prices`.`effective_date`) AS 'effective_date'
+      FROM `ticket_prices` `ticket_prices`
+      WHERE `ticket_prices`.`effective_date` <= '2020-01-01'
+      GROUP BY `ticket_prices`.`theater_id`)
+      effective_ticket_prices ON effective_ticket_prices.`theater_id` = `ticket_prices`.`theater_id`
+      AND effective_ticket_prices.`effective_date` = `ticket_prices`.`effective_date`
+  WHERE effective_ticket_prices.`theater_id` IS NOT NULL
+  ORDER BY `theaters`.`name`, `ticket_prices`.`effective_date`
+  LIMIT 2
