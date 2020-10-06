@@ -225,127 +225,20 @@ describe Dbee::Providers::ActiveRecordProvider do
       load_movie_data
     end
 
-    describe 'subquery as a top level query as a sanity check' do
-      let(:query) do
-        # select theaters.name, theater_id, max(effective_date)
-        # from theaters
-        # left join ticket_prices on theaters.id = ticket_prices.theater_id
-        # where effective_date <= '2020-01-01'
-        # group by theaters.name, theater_id
-        # order by theater_id;
-        Dbee::Query.make(
-          fields: [
-            { key_path: :name },
-            { key_path: :id },
-            { key_path: :'ticket_prices.effective_date', aggregator: :max }
-          ],
-          filters: [
-            {
-              key_path: :'ticket_prices.effective_date',
-              type: :less_than_or_equal_to,
-              value: '2020-01-01'
-            }
-          ],
-          sorters: [
-            { key_path: :id }
-          ],
-          limit: 2
-        )
-      end
-      let(:model) { Dbee::Model.make(models['Theaters, Members, and Movies']) }
-
-      it 'returns the expected results' do
-        sql = described_class.new.sql(model, query)
-
-        results = ActiveRecord::Base.connection.execute(sql)
-        expect(results.size).to eq(2)
-
-        expect(results[0]).to include(
-          'name' => 'Small Town Movies',
-          'id' => 1,
-          'ticket_prices_effective_date' => '2020-01-01'
-        )
-
-        expect(results[1]).to include(
-          'name' => 'Big City Megaplex',
-          'id' => 2,
-          'ticket_prices_effective_date' => '2019-01-31'
-        )
-      end
+    let(:snapshot_path) do
+      %w[
+        spec
+        fixtures
+        active_record_snapshots
+        one_subquery.yaml
+      ]
     end
 
-    describe 'one level of subquery' do
-      let(:query) do
-        # SELECT
-        #   theaters.name,
-        #   ticket_prices.effective_date,
-        #   ticket_prices.price_usd
-        # FROM
-        #   theaters
-        #   LEFT JOIN ticket_prices ON theaters.id = ticket_prices.theater_id
-        #   LEFT JOIN (
-        #     SELECT
-        #       theater_id,
-        #       max(effective_date) AS effective_date
-        #     FROM
-        #       ticket_prices
-        #     WHERE
-        #       effective_date <= '2020-01-01'
-        #     GROUP BY
-        #       theater_id
-        #     ) AS effective_ticket_prices ON
-        #       effective_ticket_prices.theater_id = ticket_prices.theater_id
-        #       AND effective_ticket_prices.effective_date = ticket_prices.effective_date
-        # WHERE
-        #   effective_ticket_prices.theater_id IS NOT NULL
-        # ORDER BY
-        #   theaters.name,
-        #   ticket_prices.effective_date;
-        query = {
-          given: [
-            {
-              model: :ticket_prices,
-              name: :effective_ticket_prices,
-              constraints: [
-                { name: :theater_id, parent: :theater_id },
-                { name: :effective_date, parent: :effective_date }
-              ],
-              fields: [
-                { key_path: :theater_id },
-                { key_path: :effective_date, aggregator: :max }
-              ],
-              filters: [
-                {
-                  key_path: :effective_date,
-                  type: :less_than_or_equal_to,
-                  value: '2020-01-01'
-                }
-              ]
-            }
-          ],
-          fields: [
-            { key_path: :name },
-            { key_path: :'ticket_prices.effective_date' },
-            { key_path: :'ticket_prices.price_usd' }
-          ],
-          filters: [
-            {
-              key_path: :'ticket_prices.effective_ticket_prices.theater_id',
-              type: :not_equals,
-              value: nil
-            }
-          ],
-          sorters: [
-            { key_path: :name },
-            { key_path: :'ticket_prices.effective_date' }
-          ],
-          limit: 2
-        }
-        Dbee::Query.make(query)
-      end
-      let(:model) { Dbee::Model.make(models['Theaters, Members, and Movies']) }
+    let(:snapshot) { yaml_file_read(*snapshot_path) }
+    let(:query)    { Dbee::Query.make(snapshot['query']) }
+    let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 
-      # TODO: add this to snapshots
+    describe 'one level of subquery' do
       it 'returns effective ticket prices' do
         sql = subject.sql(model, query)
 
