@@ -52,8 +52,23 @@ describe Dbee::Providers::ActiveRecordProvider do
         sql.gsub(/SELECT +/, 'SELECT ')
       end
 
+      def fixture_sql_normalizer(fixture_sql)
+        leading_whitespace_trimmed = fixture_sql.to_s.chomp.gsub(/\n\s*/, ' ')
+        select_space_normalized = select_space_normalize(leading_whitespace_trimmed)
+
+        ar_major = ActiveRecord::VERSION::MAJOR
+        case ar_major
+        when 5
+          select_space_normalized
+        when 6
+          select_space_normalized.gsub("'t'", '1').gsub("'f'", '0')
+        else
+          raise "unsupported ActiveRecord major version: #{ar_major}"
+        end
+      end
+
       %w[sqlite mysql].each do |dbms|
-        context "using #{dbms}" do
+        context "using #{dbms} and ActiveRecord major version #{ActiveRecord::VERSION::MAJOR}" do
           before(:all) do
             connect_to_db(dbms)
           end
@@ -64,29 +79,18 @@ describe Dbee::Providers::ActiveRecordProvider do
 
               yaml_fixture_files('active_record_snapshots').each_pair do |filename, snapshot|
                 specify File.basename(filename) do
-                  expected_sql = snapshot[key]
-                  check_pending(expected_sql)
+                  check_pending(snapshot[key])
 
                   model_name = snapshot['model_name']
                   query = Dbee::Query.make(snapshot['query'])
                   model = Dbee::Model.make(models[model_name])
 
-                  expected_compact_sql = select_space_normalize(
-                    expected_sql.to_s.chomp.gsub(/\n\s*/, ' ')
-                  )
-                  expected_5_sql = expected_compact_sql
-                  expected_6_sql = expected_compact_sql.gsub("'t'", '1').gsub("'f'", '0')
+                  expected_sql = fixture_sql_normalizer(snapshot[key])
                   actual_sql = select_space_normalize(
                     described_class.new(readable: readable).sql(model, query)
                   )
 
-                  error_msg = <<~ERROR_MSG
-                    Expected 5 SQL: #{expected_5_sql}
-                    Expected 6 SQL: #{expected_6_sql}
-                    Actual:         #{actual_sql}
-                  ERROR_MSG
-
-                  expect([expected_5_sql, expected_6_sql]).to include(actual_sql), error_msg
+                  expect(expected_sql).to eq actual_sql
                 end
               end
             end
