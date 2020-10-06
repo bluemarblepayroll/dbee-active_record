@@ -22,6 +22,10 @@ bundle add dbee-active_record
 
 ## Contributing
 
+### ActiveRecord Dependency
+
+This library supports both ActiveRecord 5 and 6.  Tests are adapted for both versions and should be run against both to ensure compatibility.  By default the latest 6 will be chosen unless overridden. The instructions below explain how to run tests against all supported versions.
+
 ### Development Environment Configuration
 
 Basic steps to take to get this repository compiling:
@@ -31,17 +35,33 @@ Basic steps to take to get this repository compiling:
 3. Clone the repository (git clone git@github.com:bluemarblepayroll/dbee-active_record.git)
 4. Navigate to the root folder (cd dbee-active_record)
 5. Install dependencies (bundle)
-6. Copy spec/config/database.yaml.ci to spec/config/database.yaml. Customize both sqlite and mysql connections per your local environment.
+6. Install both active_record version 5 and version 6:
+
+      `AR_VERSION=5 bundle install`
+
+      And then:
+
+      `AR_VERSION=6 bundle install`
+
+7. Copy spec/config/database.yaml.ci to spec/config/database.yaml. Customize both Sqlite and MySQL connections per your local environment.
 
 ### Running Tests
 
 To execute the test suite run:
 
+```
+bundle exec rake spec_all_active_record_versions
+```
+
+This will run under all supported ActiveRecord versions. The tests can also be run directly using:
+
 ````bash
 bundle exec rspec spec --format documentation
 ````
 
-Alternatively, you can have Guard watch for changes:
+This will run using the latest ActiveRecord version installed on your system. The environment variable `AR_VERSION` can be set to specify a particular major ActiveRecord version.
+
+Additionally, you can have Guard watch for changes:
 
 ````bash
 bundle exec guard
@@ -53,21 +73,11 @@ Also, do not forget to run Rubocop:
 bundle exec rubocop
 ````
 
-### ActiveRecord Dependency
+As a convenience, the default rake task runs the specs under all ActiveRecord versions as well as RuboCop:
 
-This library supports both ActiveRecord 5 and 6.  Tests are adapted for both versions and should be ran against both to ensure compatibility.  By default the latest 6 will be chosen unless overridden.
-
-To install gems targeting version 5, run rubocop, and run rspec:
-
-````shell
-AR_VERSION=5 bundle update; AR_VERSION=5 bundle exec rake
-````
-
-To install gems targeting version 6, run rubocop, and run rspec:
-
-````shell
-AR_VERSION=6 bundle update; AR_VERSION=5 bundle exec rake
-````
+```
+bundle exec rake
+```
 
 ### Publishing
 

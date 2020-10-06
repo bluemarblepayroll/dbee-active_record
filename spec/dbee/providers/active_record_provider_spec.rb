@@ -46,6 +46,12 @@ describe Dbee::Providers::ActiveRecordProvider do
     end
 
     context 'sql' do
+      # Different Arel versions are annoyingly inconsistent with one or two spaces
+      # after the SELECT keyword.
+      def select_space_normalize(sql)
+        sql.gsub(/SELECT +/, 'SELECT ')
+      end
+
       %w[sqlite mysql].each do |dbms|
         context "using #{dbms}" do
           before(:all) do
@@ -65,9 +71,14 @@ describe Dbee::Providers::ActiveRecordProvider do
                   query = Dbee::Query.make(snapshot['query'])
                   model = Dbee::Model.make(models[model_name])
 
-                  expected_5_sql  = expected_sql.to_s.chomp.gsub(/\n\s*/, ' ')
-                  expected_6_sql  = expected_5_sql.gsub('  ', ' ').gsub("'t'", '1').gsub("'f'", '0')
-                  actual_sql      = described_class.new(readable: readable).sql(model, query)
+                  expected_compact_sql = select_space_normalize(
+                    expected_sql.to_s.chomp.gsub(/\n\s*/, ' ')
+                  )
+                  expected_5_sql = expected_compact_sql
+                  expected_6_sql = expected_compact_sql.gsub("'t'", '1').gsub("'f'", '0')
+                  actual_sql = select_space_normalize(
+                    described_class.new(readable: readable).sql(model, query)
+                  )
 
                   error_msg = <<~ERROR_MSG
                     Expected 5 SQL: #{expected_5_sql}

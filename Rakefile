@@ -14,4 +14,23 @@ require 'rubocop/rake_task'
 RSpec::Core::RakeTask.new(:spec)
 RuboCop::RakeTask.new
 
-task default: %i[rubocop spec]
+SUPPORTED_ACTIVE_RECORD_VERSIONS = %w[5 6].freeze
+ACTIVE_RECORD_VERSION_ENV_KEY = 'AR_VERSION'
+
+task :spec_all_active_record_versions do
+  SUPPORTED_ACTIVE_RECORD_VERSIONS.each do |ar_version|
+    puts "\nRunning specs under Active Record version #{ar_version}"
+
+    # Note that rspec can not be invoked directly through the Rake::Task API
+    # as Rake is smart enough to only run tasks once. However, in this case we
+    # do want to do the same thing multiple times just under a different
+    # environment.
+    # Rake::Task['spec'].invoke
+
+    # The other advantage of the sh approach is that the ENV hash does not have
+    # to be mutated in this process.
+    sh "#{ACTIVE_RECORD_VERSION_ENV_KEY}=#{ar_version} rspec"
+  end
+end
+
+task default: %i[rubocop spec_all_active_record_versions]
