@@ -1,0 +1,74 @@
+model_name: Theaters, Members, and Movies
+# Hand coded version:
+# -- Show ALL theaters and an effective ticket price or null if there is no ticket price in effect at this point in time. Put another way; the same as the query above EXCEPT that all movie theaters are included even if there is no pricing in effect.
+# SELECT
+#   theaters.name,
+#   effective_ticket_prices.effective_date,
+#   effective_ticket_prices.price_usd
+# FROM
+#   theaters
+#   LEFT JOIN (
+#     SELECT ticket_prices.*
+#     FROM ticket_prices
+#     LEFT JOIN (
+#       SELECT
+#         theater_id,
+#         max(effective_date) AS effective_date
+#       FROM
+#         ticket_prices
+#       WHERE
+#         effective_date <= '2017-01-01'
+#       GROUP BY
+#         theater_id
+#       ) AS theater_ticket_pricing_effective_dates ON
+#         theater_ticket_pricing_effective_dates.theater_id = ticket_prices.theater_id
+#         AND theater_ticket_pricing_effective_dates.effective_date = ticket_prices.effective_date
+#       WHERE theater_ticket_pricing_effective_dates.theater_id IS NOT NULL
+#    ) AS effective_ticket_prices ON theaters.id = effective_ticket_prices.theater_id
+# ORDER BY
+#   theaters.name,
+#   effective_ticket_prices.effective_date;
+query:
+  given:
+  - name: effective_ticket_prices
+    model: theater_ticket_pricing_effective_dates
+    parent: theaters
+    constraints:
+    - name: theater_id
+      parent: id
+    filters:
+    # Coearce the join to theater_ticket_pricing_effective_dates to an inner join:
+    - key_path: theater_ticket_pricing_effective_dates.theater_id
+      type: not_equals
+      value:
+    given:
+    - name: theater_ticket_pricing_effective_dates
+      model: ticket_prices
+      parent: effective_ticket_prices
+      constraints:
+      - name: theater_id
+        parent: theater_id
+      - name: effective_date
+        parent: effective_date
+      fields:
+      - key_path: theater_id
+      - key_path: effective_date
+        aggregator: max
+      filters:
+      - key_path: effective_date
+        type: less_than_or_equal_to
+        value: '2017-01-01'
+  fields:
+  - key_path: name
+  - key_path: effective_ticket_prices.effective_date
+  - key_path: effective_ticket_prices.price_usd
+  sorters:
+  - key_path: name
+  - key_path: effective_ticket_prices.effective_date
+  limit: 2
+sqlite_not_readable:
+  pending: need to implement aliasing for subqueries
+sqlite_readable: |+
+mysql_not_readable:
+  pending: need to implement aliasing for subqueries
+mysql_readable: |+

@@ -240,20 +240,20 @@ describe Dbee::Providers::ActiveRecordProvider do
       load_movie_data
     end
 
-    let(:snapshot_path) do
-      %w[
-        spec
-        fixtures
-        active_record_snapshots
-        one_subquery.yaml
-      ]
-    end
-
     let(:snapshot) { yaml_file_read(*snapshot_path) }
     let(:query)    { Dbee::Query.make(snapshot['query']) }
     let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 
     describe 'one level of subquery' do
+      let(:snapshot_path) do
+        %w[
+          spec
+          fixtures
+          active_record_snapshots
+          one_subquery.yaml
+        ]
+      end
+
       it 'returns effective ticket prices' do
         sql = subject.sql(model, query)
 
@@ -270,6 +270,40 @@ describe Dbee::Providers::ActiveRecordProvider do
           'name' => 'Out of Business Theater',
           'ticket_prices_effective_date' => '2017-02-01',
           'ticket_prices_price_usd' => 14
+        )
+      end
+    end
+
+    pending 'two level subquery' do
+      let(:snapshot_path) do
+        %w[
+          spec
+          fixtures
+          active_record_snapshots_pending
+          two_level_subquery.yaml
+        ]
+      end
+
+      let(:snapshot) { yaml_file_read(*snapshot_path) }
+      let(:query)    { Dbee::Query.make(snapshot['query']) }
+      let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
+
+      it 'returns effective ticket prices for all theaters even if there is no effective price' do
+        sql = subject.sql(model, query)
+
+        results = ActiveRecord::Base.connection.execute(sql)
+        expect(results.size).to eq(2)
+
+        expect(results[0]).to include(
+          'name' => 'Big City Megaplex',
+          'ticket_prices_effective_date' => null,
+          'ticket_prices_price_usd' => null
+        )
+
+        expect(results[1]).to include(
+          'name' => 'Out of Business Theater',
+          'ticket_prices_effective_date' => '2016-02-01',
+          'ticket_prices_price_usd' => 12
         )
       end
     end
