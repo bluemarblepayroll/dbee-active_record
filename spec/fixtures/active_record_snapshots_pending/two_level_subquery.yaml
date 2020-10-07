@@ -31,7 +31,7 @@ model_name: Theaters, Members, and Movies
 query:
   given:
   - name: effective_ticket_prices
-    model: theater_ticket_pricing_effective_dates
+    model: ticket_prices
     parent: theaters
     constraints:
     - name: theater_id
@@ -44,7 +44,7 @@ query:
     given:
     - name: theater_ticket_pricing_effective_dates
       model: ticket_prices
-      parent: effective_ticket_prices
+      parent: ticket_prices
       constraints:
       - name: theater_id
         parent: theater_id

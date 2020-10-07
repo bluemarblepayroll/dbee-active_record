@@ -274,7 +274,7 @@ describe Dbee::Providers::ActiveRecordProvider do
       end
     end
 
-    pending 'two level subquery' do
+    describe 'two level subquery' do
       let(:snapshot_path) do
         %w[
           spec
@@ -288,7 +288,8 @@ describe Dbee::Providers::ActiveRecordProvider do
       let(:query)    { Dbee::Query.make(snapshot['query']) }
       let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 
-      it 'returns effective ticket prices for all theaters even if there is no effective price' do
+      pending 'returns effective ticket prices for all theaters even if there is no price in ' \
+              'effect' do
         sql = subject.sql(model, query)
 
         results = ActiveRecord::Base.connection.execute(sql)
