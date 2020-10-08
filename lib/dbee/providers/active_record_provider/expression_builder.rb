@@ -19,11 +19,16 @@ module Dbee
       class ExpressionBuilder < Maker # :nodoc: all
         class MissingConstraintError < StandardError; end
 
-        def initialize(model, table_alias_maker, column_alias_maker)
+        def initialize(model, table_alias_maker, column_alias_maker, unscoped_model: nil)
           super(column_alias_maker)
 
           @model             = model
+          @unscoped_model    = unscoped_model || model
           @table_alias_maker = table_alias_maker
+          # TODO: dependency inject this and remove table_alias_maker as a direct dependency:
+          @joinable_builder  = Dbee::Providers::ActiveRecordProvider::JoinableBuilder.new(
+            table_alias_maker
+          )
 
           clear
         end
@@ -31,12 +36,15 @@ module Dbee
         def clear
           @requires_group_by  = false
           @group_by_columns   = []
-          @base_table         = make_table(model.table, model.name)
+          @base_table         = joinable_builder.for_model(model)
           @select_all         = true
+          @derived_model      = Dbee::Providers::ActiveRecordProvider::DerivedModel.new(
+            model, joinable_builder
+          )
 
-          build(base_table)
+          build(base_table.arel([base_table.name]))
 
-          add_partitioners(base_table, model.partitioners)
+          add_partitioners(base_table.arel, model.partitioners)
         end
 
         # TODO: remove these after refactoring:
@@ -44,33 +52,24 @@ module Dbee
         def add(query)
           return self unless query
 
+          # TODO: extract this entire block
           query.given.each do |subquery|
-            model_path = [subquery.model.to_s]
+            # TODO: move this logic to Dbee and consolidate with similar logic in DerivedModel:
+            _root_model, *model_path = subquery.model.to_s.split('.')
+
             subquery_expression = ExpressionBuilder.new(
-              # TODO: this should probably pass in a proper key path to support
-              # a subquery on a model beyond the first level of the model tree.
-              # ALSO, it should find the result which matches the key path
-              # instead of by model name.
-              model.ancestors!(model_path)[model_path],
+              # Scope the subquery's ExpressionBuilder to just the specified model_path
+              unscoped_model.ancestors!(model_path)[model_path],
               table_alias_maker,
-              column_alias_maker
+              column_alias_maker,
+              unscoped_model: model
             ).add(subquery)
 
             # This returns an Arel::Nodes::TableAlias
-            derived_tables[subquery.name.to_s] = subquery_expression.send(:statement)
-                                                                    .as(subquery.name.to_s)
-
-            # Then that new "table" name needs to be appended to the model data
-            # structure.
-            # TODO: clean this up and handle more than one level of subquery
-            # and respect encapsulation of Dbee::Model:
-            model.send(:models_by_name)[subquery.model.to_s].append(
-              Dbee::Model.new(
-                name: subquery.name,
-                constraints: subquery.constraints,
-                table: subquery.name
-              )
-            )
+            # TODO: encapsulate this. It probably belongs in Joinable.
+            subquery_arel = subquery_expression.send(:statement).as(subquery.name.to_s)
+            joinable = joinable_builder.for_derived_model(subquery, subquery_arel)
+            derived_model.append!(joinable)
 
             # TODO: clean this up. This is needed so that the grouping can be
             # added to the Arel statement as a side effect of calling to_sql on
@@ -103,7 +102,7 @@ module Dbee
             @group_by_columns = []
           end
 
-          return statement.project(select_maker.star(base_table)).to_sql if select_all
+          return statement.project(select_maker.star(base_table.arel)).to_sql if select_all
 
           statement.to_sql
         end
@@ -111,19 +110,18 @@ module Dbee
         private
 
         attr_reader :base_table,
+                    :derived_model,
+                    :joinable_builder,
                     :model,
                     :table_alias_maker,
                     :requires_group_by,
                     :group_by_columns,
                     :select_all,
-                    :statement
+                    :statement,
+                    :unscoped_model
 
         def tables
           @tables ||= {}
-        end
-
-        def derived_tables
-          @derived_tables ||= {}
         end
 
         def key_paths_to_arel_columns
@@ -205,49 +203,48 @@ module Dbee
 
         # TODO: split up this method:
         # rubocop:disable Metrics/AbcSize
-        def table(name, model, previous_table)
-          table = derived_tables[model.table] || make_table(model.table, name)
+        def table(path, joinable, previous_joinable)
+          on = constraint_maker.make(
+            joinable.constraints, joinable.arel(path), previous_joinable.arel
+          )
 
-          on = constraint_maker.make(model.constraints, table, previous_table)
+          raise MissingConstraintError, "for: #{joinable.name}" unless on
 
-          raise MissingConstraintError, "for: #{name}" unless on
-
-          build(statement.join(table, ::Arel::Nodes::OuterJoin))
+          build(statement.join(joinable.arel, ::Arel::Nodes::OuterJoin))
           build(statement.on(on))
 
-          add_partitioners(table, model.partitioners)
+          add_partitioners(joinable.arel, joinable.partitioners)
 
-          tables[name] = table
+          tables[path] = joinable
         end
         # rubocop:enable Metrics/AbcSize
 
+        # This returns a table which corresponds to the given ancestor path.
+        # The argument is a ordered hash with keys being arrays of model name
+        # paths and values being Dbee::Model's. This has a side effect of
+        # creating Arel Tables for each model along that chain.
         def traverse_ancestors(ancestors)
-          ancestors.each_pair.inject(base_table) do |memo, (name, model)|
-            tables.key?(name) ? tables[name] : table(name, model, memo)
+          ancestors.each_pair.inject(base_table) do |memo, (path, joinable)|
+            tables.key?(path) ? tables[path] : table(path, joinable, memo)
           end
         end
 
         def add_key_path(key_path)
           return key_paths_to_arel_columns[key_path] if key_paths_to_arel_columns.key?(key_path)
 
-          ancestors = model.ancestors!(key_path.ancestor_names)
+          ancestors = derived_model.ancestors!(key_path.ancestor_names)
+          # puts "key_path: #{key_path}, ancestors: #{ancestors.keys.inspect}"
 
-          table = traverse_ancestors(ancestors)
+          joinable = traverse_ancestors(ancestors)
 
-          arel_column = table[key_path.column_name]
+          arel_column = joinable.arel[key_path.column_name]
 
-          # Note that this returns arel_column
+          # Note that this returns an arel_column.
           key_paths_to_arel_columns[key_path] = arel_column
         end
 
         def build(new_expression)
           @statement = new_expression
-        end
-
-        def make_table(table_name, alias_name)
-          Arel::Table.new(table_name).tap do |table|
-            table.table_alias = table_alias_maker.make(alias_name)
-          end
         end
       end
     end

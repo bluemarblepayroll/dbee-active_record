@@ -19,7 +19,7 @@ describe Dbee::Providers::ActiveRecordProvider::DerivedModel do
   end
   let(:subject) { described_class.new(model, joinable_builder) }
 
-  it 'ancestors! falls back to the model wrapped in a Joinable' do
+  specify 'ancestors! falls back to the model wrapped in a Joinable' do
     query_path = ['ticket_prices'].freeze
     found = subject.ancestors!(query_path)
     expect(found.size).to eq 1
@@ -30,27 +30,54 @@ describe Dbee::Providers::ActiveRecordProvider::DerivedModel do
     expect(joinable.name).to eq 'ticket_prices'
   end
 
-  it 'allows for derived models to be appended and returned' do
-    derived_joinable = Dbee::Providers::ActiveRecordProvider::Joinable.new(
-      name: 'subquery',
-      parent_model: 'ticket_prices',
-      arel: nil,
-      constraints: nil
-    )
-    subject.append!(derived_joinable)
-    subquery_path = %w[ticket_prices subquery].freeze
-    query_path = [['ticket_prices'].freeze, subquery_path].freeze
+  describe 'appending a derived model' do
+    SCENARIOS = [
+      {
+        name: 'allows for derived models to be appended and returned',
+        parent_model: 'theaters.ticket_prices',
+        subquery_path: %w[ticket_prices subquery].freeze,
+        query_path: [
+          ['ticket_prices'].freeze,
+          %w[ticket_prices subquery].freeze
+        ]
+      },
+      {
+        name: 'allows for derived models to be appended to the root model',
+        parent_model: 'theaters',
+        subquery_path: %w[subquery].freeze,
+        query_path: [%w[subquery].freeze].freeze
+      },
+      {
+        name: 'allows for derived models to be appended far down the tree',
+        parent_model: 'theaters.members.demos',
+        subquery_path: %w[members demos subquery].freeze,
+        query_path: [
+          %w[members].freeze,
+          %w[members demos].freeze,
+          %w[members demos subquery].freeze
+        ].freeze
+      }
+    ].freeze
 
-    # found = subject.ancestors!(query_path)
-    found = subject.ancestors!(subquery_path)
-    expect(found.keys).to eq query_path
+    SCENARIOS.each do |scenario|
+      it scenario[:name] do
+        derived_joinable = Dbee::Providers::ActiveRecordProvider::Joinable.new(
+          name: 'subquery',
+          parent_model: scenario[:parent_model],
+          arel: nil,
+          constraints: nil
+        )
+        subject.append!(derived_joinable)
+        subquery_path = scenario[:subquery_path]
+        query_path = scenario[:query_path]
 
-    joinable = found[subquery_path]
-    expect(joinable).to be_a(Dbee::Providers::ActiveRecordProvider::Joinable)
-    expect(joinable.name).to eq 'subquery'
+        found = subject.ancestors!(subquery_path)
+        expect(found.keys).to eq query_path
+
+        joinable = found[subquery_path]
+        expect(joinable).to be_a(Dbee::Providers::ActiveRecordProvider::Joinable)
+        expect(joinable.name).to eq 'subquery'
+      end
+    end
   end
-
-  it 'allows for derived models to be appended to the root model'
-
-  it 'allows for derived models to be appended far down the tree'
 end

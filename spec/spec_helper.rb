@@ -14,6 +14,12 @@ RSpec.configure do |config|
   # Allow for disabling auto focus mode in certain environments like CI to
   # prevent false positives when only a subset of the suite passes.
   config.filter_run_when_matching :focus unless ENV['DISABLE_RSPEC_FOCUS'] == 'true'
+
+  config.expect_with :rspec do |expectation_config|
+    # Increase this output length when displaying failure messages. This is
+    # helpful for snapshot tests and may not be needed in Rspec 4.
+    expectation_config.max_formatted_output_length = 1_000
+  end
 end
 
 unless ENV['DISABLE_SIMPLECOV'] == 'true'

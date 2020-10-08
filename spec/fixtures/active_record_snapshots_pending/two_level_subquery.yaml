@@ -31,8 +31,8 @@ model_name: Theaters, Members, and Movies
 query:
   given:
   - name: effective_ticket_prices
-    model: ticket_prices
-    parent: theaters
+    model: theaters.ticket_prices
+    parent_model: theaters
     constraints:
     - name: theater_id
       parent: id
@@ -43,8 +43,10 @@ query:
       value:
     given:
     - name: theater_ticket_pricing_effective_dates
-      model: ticket_prices
-      parent: ticket_prices
+      model: theaters.ticket_prices
+      # Not sure I like this. `theaters.ticket_prices` is probably more intuitive.
+      # The user has to know that the enclosing query is already scoped to ticket_prices.
+      parent_model: ticket_prices
       constraints:
       - name: theater_id
         parent: theater_id

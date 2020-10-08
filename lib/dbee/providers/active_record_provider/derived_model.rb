@@ -22,8 +22,10 @@ module Dbee
         def initialize(model, joinable_builder)
           @model = model || raise(ArgumentError, 'a model is required')
           @joinable_builder = joinable_builder \
-            || raise(ArgumentError, 'a joinable_builder is required')
+            || raise(ArgumentError, 'a joinable builder is required')
 
+          # This gets mutated as derived tables are appended. However, all of
+          # the instance variables of this object should never be reassigned.
           @derived_by_path = {}
 
           freeze
@@ -34,10 +36,12 @@ module Dbee
         # can not be found. The model to append to is based on the name of
         # Joinable#parent_model.
         def append!(joinable)
-          model_ancestors = model.ancestors!([joinable.parent_model])
-          derived_by_path.merge!(
-            model_ancestors.keys.last + [joinable.name] => joinable
-          )
+          root, *rest = joinable.parent_model_path
+          check_root!(root)
+
+          model_ancestors = model.ancestors!(rest)
+          model_path = model_ancestors.keys.any? ? model_ancestors.keys.last : []
+          derived_by_path.merge!(model_path + [joinable.name] => joinable)
 
           self
         end
@@ -60,6 +64,18 @@ module Dbee
         end
 
         private
+
+        def check_root!(parent_model_name)
+          # rubocop:disable Style/GuardClause
+          # Rubocop can't have it both way. If this is converted to a
+          # GuardClause then Style/MultilineIfModifier is violated.
+          # TODO: see if upgrading Rubocop fixes this.
+          unless parent_model_name == model.name
+            raise ArgumentError, "invalid root name: '#{parent_model_name}', expected: " \
+                                 "'#{model.name}''"
+          end
+          # rubocop:enable Style/GuardClause
+        end
 
         def model_ancestors_to_joinable(parts)
           model.ancestors!(parts).transform_values do |model|

@@ -1,9 +1,9 @@
 model_name: Theaters, Members, and Movies
 query:
   given:
-  - model: ticket_prices
-    name: effective_ticket_prices
-    parent: ticket_prices
+  - name: effective_ticket_prices
+    model: theaters.ticket_prices
+    parent_model: theaters.ticket_prices
     constraints:
     - name: theater_id
       parent: theater_id

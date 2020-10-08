@@ -19,53 +19,41 @@ module Dbee
       # can either be a physical table OR a derived table generated from a
       # subquery.
       class Joinable # :nodoc: all
-        attr_reader :arel, :constraints, :name, :parent_model
+        attr_reader :constraints, :name, :parent_model, :partitioners, :table, :table_alias_maker
 
-        def initialize(arel:, constraints:, name:, parent_model:)
+        # TODO: refactor as suggested by Rubocop
+        # rubocop:disable Metrics/ParameterLists
+        def initialize(
+          constraints:, name:, parent_model:, arel: nil,
+          partitioners: [],
+          table: nil,
+          table_alias_maker: Dbee::Providers::ActiveRecordProvider::SafeAliasMaker.new
+        )
           @arel = arel
           @constraints = constraints
           @name = name
           @parent_model = parent_model
-
-          freeze
-        end
-      end
-
-      # Can create `Joinables` from `Dbee::Model`s or from derived models and
-      # using table aliasing.
-      class JoinableBuilder
-        attr_reader :table_alias_maker
-
-        def initialize(table_alias_maker)
+          @partitioners = partitioners
+          @table = table
           @table_alias_maker = table_alias_maker
-          raise ArgumentError, 'a table alias maker is required' unless table_alias_maker
+        end
+        # rubocop:enable Metrics/ParameterLists
 
-          freeze
+        # TODO: move this idea to Dbee:
+        def parent_model_path
+          parent_model.split('.')
         end
 
-        def for_model(model)
-          Joinable.new(
-            arel: make_table(model.table, model.name),
-            name: model.name,
-            constraints: model.constraints,
-            parent_model: nil # this could be determined if Dbee::Model was enhanced
-          )
-        end
-
-        def for_derived_model(subquery, arel)
-          Joinable.new(
-            arel: arel,
-            name: subquery.name,
-            constraints: subquery.constraints,
-            parent_model: subquery.parent
-          )
+        # TODO: CLEAN THIS UP! Adding the join path like this is a complete hack.
+        def arel(join_path = [])
+          @arel ||= make_table(join_path)
         end
 
         private
 
-        def make_table(table_name, alias_name)
-          Arel::Table.new(table_name).tap do |table|
-            table.table_alias = table_alias_maker.make(alias_name)
+        def make_table(join_path)
+          Arel::Table.new(table).tap do |arel_table|
+            arel_table.table_alias = table_alias_maker.make(join_path)
           end
         end
       end

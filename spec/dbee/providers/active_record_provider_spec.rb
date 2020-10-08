@@ -67,6 +67,20 @@ describe Dbee::Providers::ActiveRecordProvider do
         end
       end
 
+      # Rspec's diffing is not very helpful for long strings. It does offer
+      # better support for strings with newlines. This method adds newlines
+      # before major parts of the query to support better Rspec diagnostics.
+      # Note that Rspec version 4 is supposed to ship with a better diffing
+      # tool for long strings:
+      # https://github.com/rspec/rspec-support/issues/365 .
+      def newline_injector(sql)
+        sql.gsub('LEFT OUTER JOIN', "\nLEFT OUTER JOIN")
+           .gsub('WHERE', "\nWHERE")
+           .gsub('ORDER BY', "\nORDER BY")
+           .gsub('LIMIT', "\nLIMIT")
+           .gsub('GROUP BY', "\nGROUP BY")
+      end
+
       %w[sqlite mysql].each do |dbms|
         context "using #{dbms} and ActiveRecord major version #{ActiveRecord::VERSION::MAJOR}" do
           before(:all) do
@@ -78,6 +92,8 @@ describe Dbee::Providers::ActiveRecordProvider do
               let(:key) { "#{dbms}_#{type}" }
 
               yaml_fixture_files('active_record_snapshots').each_pair do |filename, snapshot|
+                # next unless filename =~ /partitioner_example_2_query/
+
                 specify File.basename(filename) do
                   check_pending(snapshot[key])
 
@@ -85,12 +101,15 @@ describe Dbee::Providers::ActiveRecordProvider do
                   query = Dbee::Query.make(snapshot['query'])
                   model = Dbee::Model.make(models[model_name])
 
-                  expected_sql = fixture_sql_normalizer(snapshot[key])
-                  actual_sql = select_space_normalize(
-                    described_class.new(readable: readable).sql(model, query)
+                  expected_sql_with_line_breaks = newline_injector(
+                    fixture_sql_normalizer(snapshot[key])
                   )
 
-                  expect(expected_sql).to eq actual_sql
+                  subject = described_class.new(readable: readable)
+                  actual_sql = subject.sql(model, query)
+                  actual_sql_with_line_breaks = newline_injector(select_space_normalize(actual_sql))
+
+                  expect(actual_sql_with_line_breaks).to eq expected_sql_with_line_breaks
                 end
               end
             end
@@ -288,23 +307,24 @@ describe Dbee::Providers::ActiveRecordProvider do
       let(:query)    { Dbee::Query.make(snapshot['query']) }
       let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 
-      pending 'returns effective ticket prices for all theaters even if there is no price in ' \
+      it 'returns effective ticket prices for all theaters even if there is no price in ' \
               'effect' do
         sql = subject.sql(model, query)
+        puts "sql = #{sql}"
 
         results = ActiveRecord::Base.connection.execute(sql)
         expect(results.size).to eq(2)
 
         expect(results[0]).to include(
           'name' => 'Big City Megaplex',
-          'ticket_prices_effective_date' => null,
-          'ticket_prices_price_usd' => null
+          'effective_ticket_prices_effective_date' => nil,
+          'effective_ticket_prices_price_usd' => nil
         )
 
         expect(results[1]).to include(
           'name' => 'Out of Business Theater',
-          'ticket_prices_effective_date' => '2016-02-01',
-          'ticket_prices_price_usd' => 12
+          'effective_ticket_prices_effective_date' => '2016-01-01',
+          'effective_ticket_prices_price_usd' => 12
         )
       end
     end
