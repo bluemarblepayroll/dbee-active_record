@@ -1,0 +1,28 @@
+model_name: Patients
+query:
+  fields:
+    - key_path: id
+      display: 'ID #'
+  filters:
+    - type: not_equals
+      key_path: middle
+      value:
+      - a
+      - b
+      - c
+sqlite_not_readable: |+
+  SELECT "t0"."id" AS 'c0'
+  FROM "patients" "t0"
+  WHERE "t0"."middle" NOT IN ('a', 'b', 'c')
+sqlite_readable: |+
+  SELECT "patients"."id" AS 'ID #'
+  FROM "patients" "patients"
+  WHERE "patients"."middle" NOT IN ('a', 'b', 'c')
+mysql_not_readable: |+
+  SELECT `t0`.`id` AS 'c0'
+  FROM `patients` `t0`
+  WHERE `t0`.`middle` NOT IN ('a', 'b', 'c')
+mysql_readable: |+
+  SELECT `patients`.`id` AS 'ID #'
+  FROM `patients` `patients`
+  WHERE `patients`.`middle` NOT IN ('a', 'b', 'c')

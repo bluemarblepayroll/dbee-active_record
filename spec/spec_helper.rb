@@ -35,7 +35,7 @@ def fixture(*filename)
 end
 
 def yaml_fixture_files(*directory)
-  Dir[File.join('spec', 'fixtures', *directory, '*.yaml')].map do |filename|
+  Dir[File.join('spec', 'fixtures', *directory, '**', '*.yaml')].map do |filename|
     [
       filename,
       yaml_file_read(filename)

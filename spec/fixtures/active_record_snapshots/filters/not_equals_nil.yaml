@@ -1,0 +1,25 @@
+model_name: Patients
+query:
+  fields:
+    - key_path: id
+      display: 'ID #'
+  filters:
+    - type: not_equals
+      key_path: middle
+      value:
+sqlite_not_readable: |+
+  SELECT "t0"."id" AS 'c0'
+  FROM "patients" "t0"
+  WHERE "t0"."middle" IS NOT NULL
+sqlite_readable: |+
+  SELECT "patients"."id" AS 'ID #'
+  FROM "patients" "patients"
+  WHERE "patients"."middle" IS NOT NULL
+mysql_not_readable: |+
+  SELECT `t0`.`id` AS 'c0'
+  FROM `patients` `t0`
+  WHERE `t0`.`middle` IS NOT NULL
+mysql_readable: |+
+  SELECT `patients`.`id` AS 'ID #'
+  FROM `patients` `patients`
+  WHERE `patients`.`middle` IS NOT NULL
