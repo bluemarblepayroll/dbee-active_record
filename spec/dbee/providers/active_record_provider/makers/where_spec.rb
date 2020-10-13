@@ -17,12 +17,12 @@ describe Dbee::Providers::ActiveRecordProvider::Makers::Where do
   let(:column) { Arel::Table.new(:test)[:foo] }
 
   describe 'equals' do
-    specify 'string value' do
+    specify 'a string value' do
       filter = Dbee::Query::Filters::Equals.new(key_path: :foo, value: 'bar')
       expect(subject.make(filter, column).to_sql).to eq %q("test"."foo" = 'bar')
     end
 
-    specify 'null value' do
+    specify 'a null value' do
       filter = Dbee::Query::Filters::Equals.new(key_path: :foo, value: nil)
       expect(subject.make(filter, column).to_sql).to eq '"test"."foo" IS NULL'
     end
