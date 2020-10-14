@@ -71,6 +71,34 @@ query:
 sqlite_not_readable:
   pending: need to implement aliasing for subqueries
 sqlite_readable: |+
+  SELECT "theaters"."name" AS 'name', effective_ticket_prices."effective_date" AS 'effective_ticket_prices_effective_date', effective_ticket_prices."price_usd" AS 'effective_ticket_prices_price_usd'
+  FROM "theaters" "theaters"
+  LEFT OUTER JOIN (SELECT
+    "ticket_prices".*
+    FROM "ticket_prices" "ticket_prices"
+    LEFT OUTER JOIN (SELECT
+      "ticket_prices"."theater_id" AS 'theater_id',
+      MAX("ticket_prices"."effective_date") AS 'effective_date'
+      FROM "ticket_prices" "ticket_prices"
+      WHERE "ticket_prices"."effective_date" <= '2017-01-01'
+      GROUP BY "ticket_prices"."theater_id") theater_ticket_pricing_effective_dates ON theater_ticket_pricing_effective_dates."theater_id" = "ticket_prices"."theater_id" AND theater_ticket_pricing_effective_dates."effective_date" = "ticket_prices"."effective_date"
+  WHERE theater_ticket_pricing_effective_dates."theater_id" IS NOT NULL) effective_ticket_prices ON effective_ticket_prices."theater_id" = "theaters"."id"
+  ORDER BY "theaters"."name", effective_ticket_prices."effective_date"
+  LIMIT 2
 mysql_not_readable:
   pending: need to implement aliasing for subqueries
 mysql_readable: |+
+  SELECT `theaters`.`name` AS 'name', effective_ticket_prices.`effective_date` AS 'effective_ticket_prices_effective_date', effective_ticket_prices.`price_usd` AS 'effective_ticket_prices_price_usd'
+  FROM `theaters` `theaters`
+  LEFT OUTER JOIN (SELECT
+    `ticket_prices`.*
+    FROM `ticket_prices` `ticket_prices`
+    LEFT OUTER JOIN (SELECT
+      `ticket_prices`.`theater_id` AS 'theater_id',
+      MAX(`ticket_prices`.`effective_date`) AS 'effective_date'
+      FROM `ticket_prices` `ticket_prices`
+      WHERE `ticket_prices`.`effective_date` <= '2017-01-01'
+      GROUP BY `ticket_prices`.`theater_id`) theater_ticket_pricing_effective_dates ON theater_ticket_pricing_effective_dates.`theater_id` = `ticket_prices`.`theater_id` AND theater_ticket_pricing_effective_dates.`effective_date` = `ticket_prices`.`effective_date`
+  WHERE theater_ticket_pricing_effective_dates.`theater_id` IS NOT NULL) effective_ticket_prices ON effective_ticket_prices.`theater_id` = `theaters`.`id`
+  ORDER BY `theaters`.`name`, effective_ticket_prices.`effective_date`
+  LIMIT 2

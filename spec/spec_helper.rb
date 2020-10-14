@@ -18,7 +18,7 @@ RSpec.configure do |config|
   config.expect_with :rspec do |expectation_config|
     # Increase this output length when displaying failure messages. This is
     # helpful for snapshot tests and may not be needed in Rspec 4.
-    expectation_config.max_formatted_output_length = 1_000
+    expectation_config.max_formatted_output_length = 10_000
   end
 end
 

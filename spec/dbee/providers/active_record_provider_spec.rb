@@ -297,7 +297,7 @@ describe Dbee::Providers::ActiveRecordProvider do
           %w[
             spec
             fixtures
-            active_record_snapshots_pending
+            active_record_snapshots
             two_level_subquery.yaml
           ]
         end
