@@ -11,8 +11,8 @@ Gem::Specification.new do |s|
     By default Dbee ships with no underlying SQL generator.  This library will plug in ActiveRecord into Dbee and Dbee will use it for SQL generation.
   DESCRIPTION
 
-  s.authors     = ['Matthew Ruggio']
-  s.email       = ['mruggio@bluemarblepayroll.com']
+  s.authors     = ['Matthew Ruggio', 'Craig Kattner']
+  s.email       = ['mruggio@bluemarblepayroll.com', 'ckattner@bluemarblepayroll.com']
   s.files       = `git ls-files`.split("\n")
   s.test_files  = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.bindir      = 'exe'
