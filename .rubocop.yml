@@ -4,6 +4,8 @@ AllCops:
 
 Layout/LineLength:
   Max: 100
+  Exclude:
+    - spec/dbee/providers/active_record_provider/makers/where_spec.rb
 
 Metrics/AbcSize:
   Max: 17
