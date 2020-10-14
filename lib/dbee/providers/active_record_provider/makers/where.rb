@@ -16,7 +16,20 @@ module Dbee
           include Singleton
 
           def make(filter, arel_column)
-            predicates = make_predicates(filter, arel_column)
+            # If the filter has a value of nil, then simply return an IS (NOT) NULL predicate
+            return make_is_null_predicate(arel_column, filter.class) unless filter.value
+
+            values = Array(filter.value).flatten
+
+            # This logic helps ensure that if a null exists that it translates to an IS NULL
+            # predicate and does not get put into an in or not_in clause.
+            predicates = if values.include?(nil)
+                           [make_is_null_predicate(arel_column, filter.class)]
+                         else
+                           []
+                         end
+
+            predicates += make_predicates(filter, arel_column, values - [nil])
 
             # Chain all predicates together
             predicates.inject(predicates.shift) do |memo, predicate|
@@ -54,29 +67,14 @@ module Dbee
 
           private_constant :FILTER_EVALUATORS, :NULL_PREDICATE_MAP
 
-          def make_predicates(filter, arel_column)
-            # If the filter has a value of nil, then simply return an IS (NOT) NULL predicate
-            return [make_is_null_predicate(arel_column, filter.class)] unless filter.value
-
-            values = Array(filter.value).flatten
-
-            # This logic helps ensure that if a null exists that it translates to an IS (NOT) NULL
-            # predicate and does not get put into an in or not_in clause.
-            predicates = if values.include?(nil)
-                           [make_is_null_predicate(arel_column, filter.class)]
-                         else
-                           []
-                         end
-
-            values -= [nil]
-            predicates += if use_in?(filter, values)
-                            [arel_column.in(values)]
-                          elsif use_not_in?(filter, values)
-                            [arel_column.not_in(values)]
-                          else
-                            make_or_predicates(filter, arel_column, values)
-                          end
-            predicates
+          def make_predicates(filter, arel_column, values)
+            if use_in?(filter, values)
+              [arel_column.in(values)]
+            elsif use_not_in?(filter, values)
+              [arel_column.not_in(values)]
+            else
+              make_or_predicates(filter, arel_column, values)
+            end
           end
 
           def use_in?(filter, values)
