@@ -250,82 +250,82 @@ describe Dbee::Providers::ActiveRecordProvider do
         end
       end
     end
-  end
 
-  context 'the movies model' do
-    before(:all) do
-      connect_to_db(:sqlite)
-      load_schema
-      load_movie_data
-    end
-
-    let(:snapshot) { yaml_file_read(*snapshot_path) }
-    let(:query)    { Dbee::Query.make(snapshot['query']) }
-    let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
-
-    describe 'one level of subquery' do
-      let(:snapshot_path) do
-        %w[
-          spec
-          fixtures
-          active_record_snapshots
-          one_subquery.yaml
-        ]
-      end
-
-      it 'returns effective ticket prices' do
-        sql = subject.sql(model, query)
-
-        results = ActiveRecord::Base.connection.execute(sql)
-        expect(results.size).to eq(2)
-
-        expect(results[0]).to include(
-          'name' => 'Big City Megaplex',
-          'ticket_prices_effective_date' => '2019-01-31',
-          'ticket_prices_price_usd' => 12
-        )
-
-        expect(results[1]).to include(
-          'name' => 'Out of Business Theater',
-          'ticket_prices_effective_date' => '2017-02-01',
-          'ticket_prices_price_usd' => 14
-        )
-      end
-    end
-
-    describe 'two level subquery' do
-      let(:snapshot_path) do
-        %w[
-          spec
-          fixtures
-          active_record_snapshots_pending
-          two_level_subquery.yaml
-        ]
+    context 'the movies model' do
+      before(:all) do
+        connect_to_db(:sqlite)
+        load_schema
+        load_movie_data
       end
 
       let(:snapshot) { yaml_file_read(*snapshot_path) }
       let(:query)    { Dbee::Query.make(snapshot['query']) }
       let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
 
-      it 'returns effective ticket prices for all theaters even if there is no price in ' \
-              'effect' do
-        sql = subject.sql(model, query)
-        puts "sql = #{sql}"
+      describe 'one level of subquery' do
+        let(:snapshot_path) do
+          %w[
+            spec
+            fixtures
+            active_record_snapshots
+            one_subquery.yaml
+          ]
+        end
 
-        results = ActiveRecord::Base.connection.execute(sql)
-        expect(results.size).to eq(2)
+        it 'returns effective ticket prices' do
+          sql = subject.sql(model, query)
 
-        expect(results[0]).to include(
-          'name' => 'Big City Megaplex',
-          'effective_ticket_prices_effective_date' => nil,
-          'effective_ticket_prices_price_usd' => nil
-        )
+          results = ActiveRecord::Base.connection.execute(sql)
+          expect(results.size).to eq(2)
 
-        expect(results[1]).to include(
-          'name' => 'Out of Business Theater',
-          'effective_ticket_prices_effective_date' => '2016-01-01',
-          'effective_ticket_prices_price_usd' => 12
-        )
+          expect(results[0]).to include(
+            'name' => 'Big City Megaplex',
+            'ticket_prices_effective_date' => '2019-01-31',
+            'ticket_prices_price_usd' => 12
+          )
+
+          expect(results[1]).to include(
+            'name' => 'Out of Business Theater',
+            'ticket_prices_effective_date' => '2017-02-01',
+            'ticket_prices_price_usd' => 14
+          )
+        end
+      end
+
+      describe 'two level subquery' do
+        let(:snapshot_path) do
+          %w[
+            spec
+            fixtures
+            active_record_snapshots_pending
+            two_level_subquery.yaml
+          ]
+        end
+
+        let(:snapshot) { yaml_file_read(*snapshot_path) }
+        let(:query)    { Dbee::Query.make(snapshot['query']) }
+        let(:model)    { Dbee::Model.make(models['Theaters, Members, and Movies']) }
+
+        it 'returns effective ticket prices for all theaters even if there is no price in ' \
+                'effect' do
+          sql = subject.sql(model, query)
+          puts "sql = #{sql}"
+
+          results = ActiveRecord::Base.connection.execute(sql)
+          expect(results.size).to eq(2)
+
+          expect(results[0]).to include(
+            'name' => 'Big City Megaplex',
+            'effective_ticket_prices_effective_date' => nil,
+            'effective_ticket_prices_price_usd' => nil
+          )
+
+          expect(results[1]).to include(
+            'name' => 'Out of Business Theater',
+            'effective_ticket_prices_effective_date' => '2016-01-01',
+            'effective_ticket_prices_price_usd' => 12
+          )
+        end
       end
     end
   end
