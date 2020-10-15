@@ -17,7 +17,7 @@ module Dbee
 
           def make(filter, arel_column)
             # If the filter has a value of nil, then simply return an IS (NOT) NULL predicate
-            return make_is_null_predicate(arel_column, filter.class) unless filter.value
+            return make_is_null_predicate(arel_column, filter.class) if filter.value.nil?
 
             values = Array(filter.value).flatten
 
