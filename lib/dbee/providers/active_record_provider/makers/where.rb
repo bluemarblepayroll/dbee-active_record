@@ -23,11 +23,12 @@ module Dbee
 
             # This logic helps ensure that if a null exists that it translates to an IS NULL
             # predicate and does not get put into an in or not_in clause.
-            predicates = if values.include?(nil)
-                           [make_is_null_predicate(arel_column, filter.class)]
-                         else
-                           []
-                         end
+            predicates =
+              if values.include?(nil)
+                [make_is_null_predicate(arel_column, filter.class)]
+              else
+                []
+              end
 
             predicates += make_predicates(filter, arel_column, values - [nil])
 
