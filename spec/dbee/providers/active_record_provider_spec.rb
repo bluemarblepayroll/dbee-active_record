@@ -92,8 +92,6 @@ describe Dbee::Providers::ActiveRecordProvider do
               let(:key) { "#{dbms}_#{type}" }
 
               yaml_fixture_files('active_record_snapshots').each_pair do |filename, snapshot|
-                # next unless filename =~ /partitioner_example_2_query/
-
                 specify File.basename(filename) do
                   check_pending(snapshot[key])
 
@@ -309,7 +307,42 @@ describe Dbee::Providers::ActiveRecordProvider do
         it 'returns effective ticket prices for all theaters even if there is no price in ' \
                 'effect' do
           sql = subject.sql(model, query)
-          puts "sql = #{sql}"
+
+          results = ActiveRecord::Base.connection.execute(sql)
+          expect(results.size).to eq(2)
+
+          expect(results[0]).to include(
+            'name' => 'Big City Megaplex',
+            'effective_ticket_prices_effective_date' => nil,
+            'effective_ticket_prices_price_usd' => nil
+          )
+
+          expect(results[1]).to include(
+            'name' => 'Out of Business Theater',
+            'effective_ticket_prices_effective_date' => '2016-01-01',
+            'effective_ticket_prices_price_usd' => 12
+          )
+        end
+      end
+
+      describe 'two level subquery defined in the model' do
+        let(:snapshot_path) do
+          %w[
+            spec
+            fixtures
+            active_record_snapshots_pending
+            two_level_subquery_defined_in_model.yaml
+          ]
+        end
+
+        let(:snapshot) { yaml_file_read(*snapshot_path) }
+        let(:query)    { Dbee::Query.make(snapshot['query']) }
+        let(:model)    { Dbee::Model.make(models[snapshot['model_name']]) }
+
+        it 'returns effective ticket prices for all theaters even if there is no price in ' \
+                'effect' do
+          pending 'this requires some dbee work'
+          sql = subject.sql(model, query)
 
           results = ActiveRecord::Base.connection.execute(sql)
           expect(results.size).to eq(2)
