@@ -1,3 +1,9 @@
+# 2.1.2 (October 15th, 2020)
+
+* Improved test coverage for Where maker
+* Fixed bug in Where maker which resulted in only IS NULL predicates being generated, even in cases
+  of when IS NOT NULL intended.
+
 # 2.1.1 (July 15th, 2020)
 
 ### Additions:
