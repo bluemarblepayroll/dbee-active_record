@@ -92,6 +92,7 @@ describe Dbee::Providers::ActiveRecordProvider do
               let(:key) { "#{dbms}_#{type}" }
 
               yaml_fixture_files('active_record_snapshots').each_pair do |filename, snapshot|
+                # next unless filename =~ /one_subquery/
                 specify File.basename(filename) do
                   check_pending(snapshot[key])
 
@@ -341,7 +342,7 @@ describe Dbee::Providers::ActiveRecordProvider do
 
         it 'returns effective ticket prices for all theaters even if there is no price in ' \
                 'effect' do
-          pending 'this requires some dbee work'
+          pending 'this is for next commit'
           sql = subject.sql(model, query)
 
           results = ActiveRecord::Base.connection.execute(sql)

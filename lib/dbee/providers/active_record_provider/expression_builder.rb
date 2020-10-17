@@ -52,38 +52,7 @@ module Dbee
         def add(query)
           return self unless query
 
-          # TODO: extract this entire block
-          query.given.each do |subquery|
-            # TODO: move this logic to Dbee and consolidate with similar logic in DerivedModel:
-            _root_model, *model_path = subquery.model.to_s.split('.')
-
-            subquery_expression = ExpressionBuilder.new(
-              # Scope the subquery's ExpressionBuilder to just the specified model_path
-              unscoped_model.ancestors!(model_path)[model_path],
-              table_alias_maker,
-              column_alias_maker,
-              unscoped_model: model
-            ).add(subquery)
-
-            # This returns an Arel::Nodes::TableAlias
-            # TODO: encapsulate this. It probably belongs in Joinable.
-            subquery_arel = subquery_expression.send(:statement).as(subquery.name.to_s)
-            joinable = joinable_builder.for_derived_model(subquery, subquery_arel)
-            derived_model.append!(joinable)
-
-            # TODO: clean this up. This is needed so that the grouping can be
-            # added to the Arel statement as a side effect of calling to_sql on
-            # the Expression. The solution is most likely to add some sort of
-            # finalization/apply grouping method to this class to decouple this
-            # from the SQL generation and make things more explicit.
-            subquery_expression.to_sql
-          end
-
-          # TODO: this has a side effect of materializing the subqueries in
-          # such a way that is helpful.
-          # if subqueries.any?
-          #   subqueries.map(&:to_sql)
-          # end
+          SubqueryExpressionBuilder.new(self).build(query.given) if query.given.any?
 
           query.fields.each   { |field| add_field(field) }
           query.sorters.each  { |sorter| add_sorter(sorter) }
@@ -105,6 +74,34 @@ module Dbee
           return statement.project(select_maker.star(base_table.arel)).to_sql if select_all
 
           statement.to_sql
+        end
+
+        # Returns a new instance which is scoped to the specified model path.
+        # Used to construct sub queries.
+        def new_scoped_to_model_path(model_path)
+          self.class.new(
+            unscoped_model.ancestors!(model_path)[model_path],
+            table_alias_maker,
+            column_alias_maker,
+            unscoped_model: model
+          )
+        end
+
+        def append_to_model(joinable)
+          derived_model.append!(joinable)
+        end
+
+        def finalize(subquery)
+          joinable = joinable_builder.for_derived_model(subquery, statement.as(subquery.name.to_s))
+
+          # TODO: clean this up. This is needed so that the grouping can be
+          # added to the Arel statement as a side effect of calling to_sql on
+          # the Expression. The solution is most likely to add some sort of
+          # finalization/apply grouping method to this class to decouple this
+          # from the SQL generation and make things more explicit.
+          to_sql
+
+          joinable
         end
 
         private
@@ -236,7 +233,6 @@ module Dbee
           # puts "key_path: #{key_path}, ancestors: #{ancestors.keys.inspect}"
 
           joinable = traverse_ancestors(ancestors)
-
           arel_column = joinable.arel[key_path.column_name]
 
           # Note that this returns an arel_column.

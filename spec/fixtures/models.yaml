@@ -76,6 +76,11 @@ Theaters and Movies with Derived Models:
           parent: id
           name: theater_id
     - name: effective_ticket_prices
+      type: derived
+      constraints:
+        - type: reference
+          parent: id
+          name: theater_id
       query:
         model: theaters.ticket_prices
         filters:
@@ -102,10 +107,6 @@ Theaters and Movies with Derived Models:
           - key_path: effective_date
             type: less_than_or_equal_to
             value: '2017-01-01'
-      constraints:
-        - type: reference
-          parent: id
-          name: theater_id
 
 Reverse Polymorphic Example:
   # In this example, an animal has a toy, but that toy is either a dog or cat toy, depending on

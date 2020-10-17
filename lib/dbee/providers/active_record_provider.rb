@@ -16,6 +16,7 @@ require_relative 'active_record_provider/joinable'
 require_relative 'active_record_provider/joinable_builder'
 require_relative 'active_record_provider/obfuscated_alias_maker'
 require_relative 'active_record_provider/safe_alias_maker'
+require_relative 'active_record_provider/subquery_expression_builder'
 
 module Dbee
   module Providers
