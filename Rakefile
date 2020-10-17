@@ -17,6 +17,7 @@ RuboCop::RakeTask.new
 SUPPORTED_ACTIVE_RECORD_VERSIONS = %w[5 6].freeze
 ACTIVE_RECORD_VERSION_ENV_KEY = 'AR_VERSION'
 
+desc 'Runs Rspec tests for all supported ActiveRecord versions.'
 task :spec_all_active_record_versions do
   SUPPORTED_ACTIVE_RECORD_VERSIONS.each do |ar_version|
     puts "\nRunning specs under Active Record version #{ar_version}"
@@ -33,4 +34,5 @@ task :spec_all_active_record_versions do
   end
 end
 
+desc 'Runs all automated tests.'
 task default: %i[rubocop spec_all_active_record_versions]
