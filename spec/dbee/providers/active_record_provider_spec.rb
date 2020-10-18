@@ -342,7 +342,6 @@ describe Dbee::Providers::ActiveRecordProvider do
 
         it 'returns effective ticket prices for all theaters even if there is no price in ' \
                 'effect' do
-          pending 'this is for next commit'
           sql = subject.sql(model, query)
 
           results = ActiveRecord::Base.connection.execute(sql)

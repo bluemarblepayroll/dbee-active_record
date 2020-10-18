@@ -19,15 +19,32 @@ describe Dbee::Providers::ActiveRecordProvider::DerivedModel do
   end
   let(:subject) { described_class.new(model, joinable_builder) }
 
-  specify 'ancestors! falls back to the model wrapped in a Joinable' do
-    query_path = ['ticket_prices'].freeze
-    found = subject.ancestors!(query_path)
-    expect(found.size).to eq 1
+  describe '#ancestors!' do
+    let(:model) { Dbee::Model.make(models['Theaters and Movies with Derived Models']) }
 
-    path, joinable = found.first
-    expect(path).to eq query_path
-    expect(joinable).to be_a(Dbee::Providers::ActiveRecordProvider::Joinable)
-    expect(joinable.name).to eq 'ticket_prices'
+    it 'falls back to the model wrapped in a Joinable' do
+      query_path = ['ticket_prices'].freeze
+      found = subject.ancestors!(query_path)
+      expect(found.size).to eq 1
+
+      path, joinable = found.first
+      expect(path).to eq query_path
+      expect(joinable).to be_a(Dbee::Providers::ActiveRecordProvider::Joinable)
+      expect(joinable.name).to eq 'ticket_prices'
+    end
+
+    it 'builds a derived table given a Dbee::Model::Derived' do
+      connect_to_db(:sqlite)
+
+      query_path = ['effective_ticket_prices'].freeze
+      found = subject.ancestors!(query_path)
+      expect(found.size).to eq 1
+
+      path, joinable = found.first
+      expect(path).to eq query_path
+      expect(joinable).to be_a(Dbee::Providers::ActiveRecordProvider::Joinable)
+      expect(joinable.name).to eq 'effective_ticket_prices'
+    end
   end
 
   describe 'appending a derived model' do

@@ -16,6 +16,10 @@ module Dbee
   module Providers
     class ActiveRecordProvider
       # Decorates a Dbee::Model with derived tables created from subqueries.
+      # This also returns instances of
+      # `Dbee::Providers::ActiveRecordProvider::Joinable` instead of
+      # `Dbee::Model` as a Joinable provides a layer of abstraction over
+      # physical and derived tables.
       class DerivedModel # :nodoc: all
         attr_reader :joinable_builder, :model
 
@@ -78,9 +82,29 @@ module Dbee
         end
 
         def model_ancestors_to_joinable(parts)
-          model.ancestors!(parts).transform_values do |model|
-            joinable_builder.for_model(model)
+          model.ancestors!(parts).transform_values do |current_model|
+            case current_model
+            when Dbee::Model::TableBased
+              joinable_builder.for_model(current_model)
+            when Dbee::Model::Derived
+              generate_subquery_joinable(current_model)
+            else
+              # TODO: use the Caution illegal state error
+              raise "unknown model type, '#{current_model.class}' for path #{parts}"
+            end
           end
+        end
+
+        def generate_subquery_joinable(current_model)
+          expression_builder = ExpressionBuilder.new(
+            model,
+            joinable_builder.table_alias_maker,
+            # TODO: use the configured column alias maker
+            SafeAliasMaker.new
+          )
+          SubqueryExpressionBuilder.new(expression_builder)
+                                   .build(current_model.query, append_to_model: false)
+                                   .first
         end
 
         attr_reader :derived_by_path

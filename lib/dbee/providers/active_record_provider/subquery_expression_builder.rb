@@ -26,20 +26,19 @@ module Dbee
           freeze
         end
 
-        def build(queries)
-          queries.map do |subquery|
+        def build(queries, append_to_model: true)
+          Array(queries).map do |subquery|
             # TODO: move this logic to Dbee and consolidate with similar logic in DerivedModel:
             _root_model, *model_path = subquery.model.to_s.split('.')
 
             subquery_expression = expression_builder.new_scoped_to_model_path(model_path)
             subquery_expression.add(subquery)
-            joinable = subquery_expression.finalize(subquery)
 
-            # The outer query needs to have this derived table appended to its
-            # model tree so that it knows how to join to it.
-            expression_builder.append_to_model(joinable)
-
-            subquery_expression
+            subquery_expression.finalize(subquery).tap do |joinable|
+              # The outer query needs to have this derived table appended to its
+              # model tree so that it knows how to join to it.
+              expression_builder.append_to_model(joinable) if append_to_model
+            end
           end
         end
       end
