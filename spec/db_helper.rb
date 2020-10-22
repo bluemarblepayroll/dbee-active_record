@@ -8,6 +8,7 @@
 #
 
 require_relative 'spec_helper'
+require_relative 'fixtures/models'
 
 # Enable SQL logging using:
 # ActiveRecord::Base.logger = Logger.new(STDERR)

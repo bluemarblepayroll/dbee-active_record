@@ -291,6 +291,7 @@ describe Dbee::Providers::ActiveRecordProvider do
         end
       end
 
+      # TODO: consolidate these tests as they all have the same results:
       describe 'two level subquery' do
         let(:snapshot_path) do
           %w[
@@ -342,6 +343,46 @@ describe Dbee::Providers::ActiveRecordProvider do
 
         it 'returns effective ticket prices for all theaters even if there is no price in ' \
                 'effect' do
+          sql = subject.sql(model, query)
+
+          results = ActiveRecord::Base.connection.execute(sql)
+          expect(results.size).to eq(2)
+
+          expect(results[0]).to include(
+            'name' => 'Big City Megaplex',
+            'effective_ticket_prices_effective_date' => nil,
+            'effective_ticket_prices_price_usd' => nil
+          )
+
+          expect(results[1]).to include(
+            'name' => 'Out of Business Theater',
+            'effective_ticket_prices_effective_date' => '2016-01-01',
+            'effective_ticket_prices_price_usd' => 12
+          )
+        end
+      end
+
+      describe 'two level subquery defined using the Ruby DSL' do
+        let(:query) do
+          Dbee::Query.make({
+                             fields: [
+                               { key_path: :name },
+                               { key_path: :'effective_ticket_prices.effective_date' },
+                               { key_path: :'effective_ticket_prices.price_usd' }
+                             ],
+                             sorters: [
+                               { key_path: :name },
+                               { key_path: :'effective_ticket_prices.effective_date' }
+                             ],
+                             limit: 2
+                           })
+        end
+        let(:model) { Models::Theaters.to_model(Dbee::Query.make(query).key_chain) }
+
+        it 'returns effective ticket prices for all theaters even if there is no price in ' \
+                'effect' do
+          pending 'Dbee is not smart enough to handle this yet'
+          puts "model: \n #{model.to_yaml}\n"
           sql = subject.sql(model, query)
 
           results = ActiveRecord::Base.connection.execute(sql)
