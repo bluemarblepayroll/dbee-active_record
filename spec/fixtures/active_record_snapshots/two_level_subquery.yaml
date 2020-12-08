@@ -30,44 +30,87 @@ model_name: Theaters, Members, and Movies
 #   effective_ticket_prices.effective_date;
 query:
   given:
-  - name: effective_ticket_prices
-    model: theaters.ticket_prices
-    parent_model: theaters
-    constraints:
-    - name: theater_id
-      parent: id
-    filters:
-    # Coearce the join to theater_ticket_pricing_effective_dates to an inner join:
-    - key_path: theater_ticket_pricing_effective_dates.theater_id
-      type: not_equals
-      value:
-    given:
-    - name: theater_ticket_pricing_effective_dates
+    - name: effective_ticket_prices
       model: theaters.ticket_prices
-      # Not sure I like this. `theaters.ticket_prices` is probably more intuitive.
-      # The user has to know that the enclosing query is already scoped to ticket_prices.
-      parent_model: ticket_prices
+      parent_model: theaters
       constraints:
-      - name: theater_id
-        parent: theater_id
-      - name: effective_date
-        parent: effective_date
-      fields:
-      - key_path: theater_id
-      - key_path: effective_date
-        aggregator: max
+        - name: theater_id
+          parent: id
       filters:
-      - key_path: effective_date
-        type: less_than_or_equal_to
-        value: '2017-01-01'
+        # Coearce the join to theater_ticket_pricing_effective_dates to an inner join:
+        - key_path: theater_ticket_pricing_effective_dates.theater_id
+          type: not_equals
+          value:
+      given:
+        - name: theater_ticket_pricing_effective_dates
+          model: theaters.ticket_prices
+          # Not sure I like this. `theaters.ticket_prices` is probably more intuitive.
+          # The user has to know that the enclosing query is already scoped to ticket_prices.
+          parent_model: ticket_prices
+          constraints:
+            - name: theater_id
+              parent: theater_id
+            - name: effective_date
+              parent: effective_date
+          fields:
+            - key_path: theater_id
+            - key_path: effective_date
+              aggregator: max
+          filters:
+            - key_path: effective_date
+              type: less_than_or_equal_to
+              value: '2017-01-01'
   fields:
-  - key_path: name
-  - key_path: effective_ticket_prices.effective_date
-  - key_path: effective_ticket_prices.price_usd
+    - key_path: name
+    - key_path: effective_ticket_prices.effective_date
+    - key_path: effective_ticket_prices.price_usd
   sorters:
-  - key_path: name
-  - key_path: effective_ticket_prices.effective_date
+    - key_path: name
+    - key_path: effective_ticket_prices.effective_date
   limit: 2
+
+graph-based-query:
+  given:
+    - name: effective_ticket_prices
+      from_model: ticket_prices
+      relationships:
+        - for: ['effective_ticket_prices', 'theaters']
+          constraints:
+            - name: theater_id
+              parent: id
+        - for: ['effective_ticket_prices', 'theater_ticket_pricing_effective_dates']
+          constraints:
+            - name: theater_id
+              parent: theater_id
+            - name: effective_date
+              parent: effective_date
+      query:
+        filters:
+          # Coearce the join to theater_ticket_pricing_effective_dates to an inner join:
+          - key_path: theater_ticket_pricing_effective_dates.theater_id
+            type: not_equals
+            value:
+      given:
+        - name: theater_ticket_pricing_effective_dates
+          from_model: ticket_prices
+          query:
+            fields:
+              - key_path: theater_id
+              - key_path: effective_date
+                aggregator: max
+            filters:
+              - key_path: effective_date
+                type: less_than_or_equal_to
+                value: '2017-01-01'
+  fields:
+    - key_path: name
+    - key_path: effective_ticket_prices.effective_date
+    - key_path: effective_ticket_prices.price_usd
+  sorters:
+    - key_path: name
+    - key_path: effective_ticket_prices.effective_date
+  limit: 2
+
 sqlite_not_readable:
   pending: need to implement aliasing for subqueries
 sqlite_readable: |+

@@ -65,16 +65,79 @@ Theaters, Members, and Movies:
           parent: id
           name: theater_id
 
-Theaters and Movies with Derived Models:
-  name: theaters
-  table: theaters
+Theaters, Members, and Movies Graph Based:
   models:
-    - name: ticket_prices
-      table: ticket_prices
+    theaters:
+    members:
+    demos:
+      table: demographics
+    phone_numbers:
+    movies:
+    favorite_comic_movies:
+      table: movies
+    favorite_mystery_movies:
+      table: movies
+    favorite_comedy_movies:
+      table: movies
+    ticket_prices:
+  relationships:
+    - for: ['member', 'theaters']
+      constraints:
+      - type: reference
+        parent: id
+        name: tid
+      - type: reference
+        parent: partition
+        name: partition
+    - for: ['demos', 'members']
+      constraints:
+        - type: reference
+          parent: id
+          name: member_id
+    - for: ['demos', 'phone_numbers']
+      constraints:
+        - type: reference
+          parent: id
+          name: demographic_id
+    - for: ['members', 'movies']
+      constraints:
+        - type: reference
+          parent: id
+          name: member_id
+    - for: ['members', 'favorite_comic_movies']
+      constraints:
+        - type: reference
+          parent: id
+          name: member_id
+        - type: static
+          name: genre
+          value: comic
+    - for: ['members', 'favorite_mystery_movies']
+      constraints:
+        - type: reference
+          parent: id
+          name: member_id
+        - type: static
+          name: genre
+          value: mystery
+    - for: ['members', 'favorite_comedy_movies']
+      constraints:
+        - type: reference
+          parent: id
+          name: member_id
+        - type: static
+          name: genre
+          value: comedy
+    - for: ['theaters', 'ticket_prices']
       constraints:
         - type: reference
           parent: id
           name: theater_id
+
+Theaters and Movies with Derived Models:
+  name: theaters
+  table: theaters
+  models:
     - name: effective_ticket_prices
       type: derived
       constraints:

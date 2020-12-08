@@ -1,33 +1,67 @@
 model_name: Theaters, Members, and Movies
 query:
   given:
-  - name: effective_ticket_prices
-    model: theaters.ticket_prices
-    parent_model: theaters.ticket_prices
-    constraints:
-    - name: theater_id
-      parent: theater_id
-    - name: effective_date
-      parent: effective_date
-    fields:
-    - key_path: theater_id
-    - key_path: effective_date
-      aggregator: max
-    filters:
-    - key_path: effective_date
-      type: less_than_or_equal_to
-      value: '2020-01-01'
+    - name: effective_ticket_prices
+      model: theaters.ticket_prices
+      parent_model: theaters.ticket_prices
+      constraints:
+      - name: theater_id
+        parent: theater_id
+      - name: effective_date
+        parent: effective_date
+      fields:
+      - key_path: theater_id
+      - key_path: effective_date
+        aggregator: max
+      filters:
+      - key_path: effective_date
+        type: less_than_or_equal_to
+        value: '2020-01-01'
   fields:
-  - key_path: name
-  - key_path: ticket_prices.effective_date
-  - key_path: ticket_prices.price_usd
+    - key_path: name
+    - key_path: ticket_prices.effective_date
+    - key_path: ticket_prices.price_usd
   filters:
-  - key_path: ticket_prices.effective_ticket_prices.theater_id
-    type: not_equals
-    value:
+    - key_path: ticket_prices.effective_ticket_prices.theater_id
+      type: not_equals
+      value:
   sorters:
-  - key_path: name
-  - key_path: ticket_prices.effective_date
+    - key_path: name
+    - key_path: ticket_prices.effective_date
+  limit: 2
+
+graph-based-query:
+  given:
+    - name: effective_ticket_prices
+      relationships:
+        - for: ['effective_ticket_prices', 'theaters']
+          constraints:
+            - parent: theater_id
+              name: theater_id
+            - parent: effective_date
+              name: effective_date
+      query:
+        from_model: ticket_prices
+        fields:
+        - key_path: theater_id
+        - key_path: effective_date
+          aggregator: max
+        filters:
+        - key_path: effective_date
+          type: less_than_or_equal_to
+          value: '2020-01-01'
+  from_model: theaters
+  fields:
+    - key_path: name
+    - key_path: ticket_prices.effective_date
+    - key_path: ticket_prices.price_usd
+  filters:
+    - key_path: ticket_prices.effective_ticket_prices.theater_id
+      type: not_equals
+      value:
+  sorters:
+    - key_path: name
+    - key_path: ticket_prices.effective_date
   limit: 2
 sqlite_not_readable:
   pending: need to implement aliasing for subqueries
