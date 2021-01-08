@@ -68,6 +68,16 @@ Theaters, Members, and Movies:
 Theaters, Members, and Movies Graph Based:
   models:
     theaters:
+      relationships:
+        members:
+          - type: reference
+            name: id
+            parent: tid
+        parent_theater:
+          - type: reference
+            name: id
+            parent: parent_theater_id
+    parent_theater:
     members:
     demos:
       table: demographics
