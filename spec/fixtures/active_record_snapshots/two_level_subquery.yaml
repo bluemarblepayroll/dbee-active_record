@@ -1,6 +1,9 @@
 model_name: Theaters, Members, and Movies
 # Hand coded version:
-# -- Show ALL theaters and an effective ticket price or null if there is no ticket price in effect at this point in time. Put another way; the same as the query above EXCEPT that all movie theaters are included even if there is no pricing in effect.
+# -- Show ALL theaters and an effective ticket price or null if there is no
+# ticket price in effect at this point in time. Put another way; the same as
+# the one_subquery.yaml example except that all movie theaters are included
+# even if there is no pricing in effect.
 # SELECT
 #   theaters.name,
 #   effective_ticket_prices.effective_date,
