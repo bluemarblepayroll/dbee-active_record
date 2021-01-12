@@ -125,7 +125,7 @@ Theaters, Members, and Movies with Derived Models Directed Graph Based with Nest
             parent: id
             name: theater_id
     query:
-      model: ticket_prices # NOTE: could be called "from" instead of "model"
+      from: ticket_prices
       filters:
         # Coearce the join to theater_ticket_pricing_effective_dates to an inner join:
         - key_path: theater_ticket_pricing_effective_dates.theater_id
@@ -133,7 +133,7 @@ Theaters, Members, and Movies with Derived Models Directed Graph Based with Nest
           value:
       given:
         - name: theater_ticket_pricing_effective_dates
-          model: ticket_prices
+          from: ticket_prices
           relationships:
             ticket_prices:
               constraints:
