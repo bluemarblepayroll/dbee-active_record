@@ -12,117 +12,77 @@ require_relative 'maker'
 module Dbee
   module Providers
     class ActiveRecordProvider
-      # This class can generate an Arel expression tree.
-
-      # TODO: break up this class
-      # rubocop:disable Metrics/ClassLength
+      # This class can generate an Arel expression tree given a Dbee::Schema
+      # and Dbee::Query.
       class ExpressionBuilder < Maker # :nodoc: all
         class MissingConstraintError < StandardError; end
 
-        def initialize(model, table_alias_maker, column_alias_maker, unscoped_model: nil)
+        attr_reader :column_alias_maker, :table_alias_maker, :schema
+
+        def initialize(schema, table_alias_maker, column_alias_maker)
           super(column_alias_maker)
 
-          @model             = model
-          @unscoped_model    = unscoped_model || model
+          @schema            = schema
           @table_alias_maker = table_alias_maker
-          # TODO: dependency inject this and remove table_alias_maker as a direct dependency:
-          @joinable_builder  = Dbee::Providers::ActiveRecordProvider::JoinableBuilder.new(
-            table_alias_maker
-          )
-
-          clear
         end
 
-        def clear
-          @requires_group_by  = false
-          @group_by_columns   = []
-          @base_table         = joinable_builder.for_model(model)
-          @select_all         = true
-          @derived_model      = Dbee::Providers::ActiveRecordProvider::DerivedModel.new(
-            model, joinable_builder
-          )
+        def to_arel(query)
+          reset_query_state
+          build_query(query)
 
-          build(base_table.arel([base_table.name]))
+          return statement.project(select_maker.star(base_table)) if select_all
 
-          add_partitioners(base_table.arel, model.partitioners)
+          statement
         end
 
-        # TODO: remove these after refactoring:
-        # rubocop:disable Metrics/AbcSize
-        def add(query)
-          return self unless query
-
-          SubqueryExpressionBuilder.new(self).build(query.given) if query.given.any?
-
-          query.fields.each   { |field| add_field(field) }
-          query.sorters.each  { |sorter| add_sorter(sorter) }
-          query.filters.each  { |filter| add_filter(filter) }
-
-          add_limit(query.limit)
-
-          self
-        end
-        # rubocop:enable Metrics/AbcSize
-
-        def to_sql
-          if requires_group_by
-            @requires_group_by = false
-            statement.group(group_by_columns) unless group_by_columns.empty?
-            @group_by_columns = []
-          end
-
-          return statement.project(select_maker.star(base_table.arel)).to_sql if select_all
-
-          statement.to_sql
-        end
-
-        # Returns a new instance which is scoped to the specified model path.
-        # Used to construct sub queries.
-        def new_scoped_to_model_path(model_path)
-          self.class.new(
-            unscoped_model.ancestors!(model_path)[model_path],
-            table_alias_maker,
-            column_alias_maker,
-            unscoped_model: model
-          )
-        end
-
-        def append_to_model(joinable)
-          derived_model.append!(joinable)
-        end
-
-        def finalize(subquery)
-          joinable = joinable_builder.for_derived_model(subquery, statement.as(subquery.name.to_s))
-
-          # TODO: clean this up. This is needed so that the grouping can be
-          # added to the Arel statement as a side effect of calling to_sql on
-          # the Expression. The solution is most likely to add some sort of
-          # finalization/apply grouping method to this class to decouple this
-          # from the SQL generation and make things more explicit.
-          to_sql
-
-          joinable
+        def to_sql(query)
+          to_arel(query).to_sql
         end
 
         private
 
         attr_reader :base_table,
-                    :derived_model,
-                    :joinable_builder,
-                    :model,
-                    :table_alias_maker,
+                    :key_paths_to_arel_columns,
+                    :from_model,
+                    :statement,
                     :requires_group_by,
                     :group_by_columns,
                     :select_all,
-                    :statement,
-                    :unscoped_model
+                    :tables
 
-        def tables
-          @tables ||= {}
+        def reset_query_state
+          @base_table = nil
+          @key_paths_to_arel_columns = {}
+          @from_model        = nil
+          @group_by_columns  = []
+          @requires_group_by = false
+          @select_all        = true
+          @tables            = {}
         end
 
-        def key_paths_to_arel_columns
-          @key_paths_to_arel_columns ||= {}
+        def build_query(query)
+          establish_query_base(query)
+
+          # SubqueryExpressionBuilder.new(self).build(query.given) if query.given.any?
+
+          process_fields_sorters_and_filters(query)
+
+          add_partitioners(base_table, from_model.partitioners)
+          add_limit(query.limit)
+
+          statement.group(group_by_columns) if requires_group_by && !group_by_columns.empty?
+        end
+
+        def establish_query_base(query)
+          @from_model = schema.model_for_name!(query.from)
+          @base_table = make_table(from_model.table, @from_model.name)
+          build(base_table)
+        end
+
+        def process_fields_sorters_and_filters(query)
+          query.fields.each   { |field| add_field(field) }
+          query.sorters.each  { |sorter| add_sorter(sorter) }
+          query.filters.each  { |filter| add_filter(filter) }
         end
 
         def add_filter(filter)
@@ -198,52 +158,60 @@ module Dbee
           self
         end
 
-        # TODO: split up this method:
-        # rubocop:disable Metrics/AbcSize
-        def table(path, joinable, previous_joinable)
-          on = constraint_maker.make(
-            joinable.constraints, joinable.arel(path), previous_joinable.arel
-          )
+        def table(ancestor_names, relationship, model, previous_table)
+          table = make_table(model.table, ancestor_names)
 
-          raise MissingConstraintError, "for: #{joinable.name}" unless on
+          on = constraint_maker.make(relationship.constraints, table, previous_table)
 
-          build(statement.join(joinable.arel, ::Arel::Nodes::OuterJoin))
+          raise MissingConstraintError, "for: #{ancestor_names}" unless on
+
+          build(statement.join(table, ::Arel::Nodes::OuterJoin))
           build(statement.on(on))
 
-          add_partitioners(joinable.arel, joinable.partitioners)
+          add_partitioners(table, model.partitioners)
 
-          tables[path] = joinable
+          tables[ancestor_names] = table
         end
-        # rubocop:enable Metrics/AbcSize
 
-        # This returns a table which corresponds to the given ancestor path.
-        # The argument is a ordered hash with keys being arrays of model name
-        # paths and values being Dbee::Model's. This has a side effect of
-        # creating Arel Tables for each model along that chain.
-        def traverse_ancestors(ancestors)
-          ancestors.each_pair.inject(base_table) do |memo, (path, joinable)|
-            tables.key?(path) ? tables[path] : table(path, joinable, memo)
+        # Travel the query path returning the table at the end of the path.
+        #
+        # Side effect: intermediate tables are created along the way and are
+        # added to the "tables" hash keyed by path.
+        def traverse_query_path(expanded_query_path)
+          visited_path = []
+
+          expanded_query_path.inject(base_table) do |prev_model, (relationship, next_model)|
+            visited_path += [relationship.name]
+            if tables.key?(visited_path)
+              tables[visited_path]
+            else
+              table(visited_path, relationship, next_model, prev_model)
+            end
           end
         end
 
         def add_key_path(key_path)
           return key_paths_to_arel_columns[key_path] if key_paths_to_arel_columns.key?(key_path)
 
-          ancestors = derived_model.ancestors!(key_path.ancestor_names)
-          # puts "key_path: #{key_path}, ancestors: #{ancestors.keys.inspect}"
+          expanded_query_path = schema.expand_query_path(from_model, key_path)
+          table = traverse_query_path(expanded_query_path)
 
-          joinable = traverse_ancestors(ancestors)
-          arel_column = joinable.arel[key_path.column_name]
+          arel_column = table[key_path.column_name]
 
-          # Note that this returns an arel_column.
+          # Note that this returns arel_column
           key_paths_to_arel_columns[key_path] = arel_column
         end
 
         def build(new_expression)
           @statement = new_expression
         end
+
+        def make_table(table_name, alias_name)
+          Arel::Table.new(table_name).tap do |table|
+            table.table_alias = table_alias_maker.make(alias_name)
+          end
+        end
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end

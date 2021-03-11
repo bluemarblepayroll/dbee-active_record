@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-# TODO: remove this once dbee updates have been officially released:
-gem 'dbee', git: 'https://github.com/bluemarblepayroll/dbee.git', ref: '9b1e1b' # path: '../dbee'
+# TODO: remove this from here once dbee udpates have been released.
+gem 'dbee', git: 'https://github.com/bluemarblepayroll/dbee.git', ref: 'dce6bea'
 
 gemspec

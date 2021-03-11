@@ -7,8 +7,15 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-require 'yaml'
 require 'pry'
+require 'super_diff/rspec'
+require 'yaml'
+
+RSpec.configure do |config|
+  # Allow for disabling auto focus mode in certain environments like CI to
+  # prevent false positives when only a subset of the suite passes.
+  config.filter_run_when_matching :focus unless ENV['DISABLE_RSPEC_FOCUS'] == 'true'
+end
 
 RSpec.configure do |config|
   # Allow for disabling auto focus mode in certain environments like CI to
@@ -19,6 +26,14 @@ RSpec.configure do |config|
     # Increase this output length when displaying failure messages. This is
     # helpful for snapshot tests and may not be needed in Rspec 4.
     expectation_config.max_formatted_output_length = 10_000
+  end
+
+  config.mock_with :rspec do |mocks|
+    # This option should be set when all dependencies are being loaded
+    # before a spec run, as is the case in a typical spec helper. It will
+    # cause any verifying double instantiation for a class that does not
+    # exist to raise, protecting against incorrectly spelt names.
+    mocks.verify_doubled_constant_names = true
   end
 end
 
@@ -47,7 +62,7 @@ def fixture(*filename)
 end
 
 def yaml_fixture_files(*directory)
-  Dir[File.join('spec', 'fixtures', *directory, '*.yaml')].map do |filename|
+  Dir[File.join('spec', 'fixtures', *directory, '**', '*.yaml')].map do |filename|
     [
       filename,
       yaml_file_read(filename)

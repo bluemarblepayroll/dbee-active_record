@@ -17,6 +17,8 @@ module Dbee
     class ActiveRecordProvider
       # This class composes all the maker instances into one for use together.
       class Maker # :nodoc: all
+        attr_reader :column_alias_maker
+
         def initialize(column_alias_maker)
           @column_alias_maker = column_alias_maker
           @constraint_maker   = Makers::Constraint.instance
@@ -27,8 +29,7 @@ module Dbee
 
         private
 
-        attr_reader :column_alias_maker,
-                    :constraint_maker,
+        attr_reader :constraint_maker,
                     :order_maker,
                     :select_maker,
                     :where_maker

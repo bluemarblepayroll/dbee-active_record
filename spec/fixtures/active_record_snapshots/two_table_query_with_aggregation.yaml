@@ -1,5 +1,6 @@
 model_name: Patients
 query:
+  from: patients
   fields:
     - key_path: id
       display: 'ID #'

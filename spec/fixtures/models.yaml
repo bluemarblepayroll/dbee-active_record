@@ -1,70 +1,3 @@
-Theaters, Members, and Movies:
-  name: theaters
-  table: theaters
-  models:
-    - name: members
-      table: members
-      constraints:
-        - type: reference
-          parent: id
-          name: tid
-        - type: reference
-          parent: partition
-          name: partition
-      models:
-        - name: demos
-          table: demographics
-          constraints:
-            - type: reference
-              parent: id
-              name: member_id
-          models:
-            - name: phone_numbers
-              table: phone_numbers
-              constraints:
-                - type: reference
-                  parent: id
-                  name: demographic_id
-        - name: movies
-          table: movies
-          constraints:
-            - type: reference
-              parent: id
-              name: member_id
-        - name: favorite_comic_movies
-          table: movies
-          constraints:
-            - type: reference
-              parent: id
-              name: member_id
-            - type: static
-              name: genre
-              value: comic
-        - name: favorite_mystery_movies
-          table: movies
-          constraints:
-            - type: reference
-              parent: id
-              name: member_id
-            - type: static
-              name: genre
-              value: mystery
-        - name: favorite_comedy_movies
-          table: movies
-          constraints:
-            - type: reference
-              parent: id
-              name: member_id
-            - type: static
-              name: genre
-              value: comedy
-    - name: ticket_prices
-      table: ticket_prices
-      constraints:
-        - type: reference
-          parent: id
-          name: theater_id
-
 Theaters and Movies with Derived Models:
   name: theaters
   table: theaters
@@ -150,68 +83,142 @@ Theaters, Members, and Movies with Derived Models Directed Graph Based with Nest
               type: less_than_or_equal_to
               value: '2017-01-01'
 
+Theaters, Members, and Movies:
+  theaters:
+    relationships:
+      members:
+        constraints:
+          - type: reference
+            parent: id
+            name: tid
+          - type: reference
+            parent: partition
+            name: partition
+      ticket_prices:
+        constraints:
+          - type: reference
+            parent: id
+            name: theater_id
+  members:
+    relationships:
+      demos:
+        model: demographics
+        constraints:
+          - type: reference
+            parent: id
+            name: member_id
+      movies:
+        constraints:
+          - type: reference
+            parent: id
+            name: member_id
+      favorite_comic_movies:
+        model: movies
+        constraints:
+          - type: reference
+            parent: id
+            name: member_id
+          - type: static
+            name: genre
+            value: comic
+      favorite_mystery_movies:
+        model: movies
+        constraints:
+          - type: reference
+            parent: id
+            name: member_id
+          - type: static
+            name: genre
+            value: mystery
+      favorite_comedy_movies:
+        model: movies
+        constraints:
+          - type: reference
+            parent: id
+            name: member_id
+          - type: static
+            name: genre
+            value: comedy
+  demographics:
+    table: demographics
+    relationships:
+      phone_numbers:
+        constraints:
+          - type: reference
+            parent: id
+            name: demographic_id
+  phone_numbers:
+  movies:
+  ticket_prices:
+
 Reverse Polymorphic Example:
   # In this example, an animal has a toy, but that toy is either a dog or cat toy, depending on
   # the type of the animal.  So for this to work in this direction, static constraints pointed
   # at the parent (animals) is needed.
-  name: animals
-  models:
-    - name: dog_toy
-      table: dog_toys
+  animals:
+   relationships:
+    dog_toy:
+      model: dog_toys
       constraints:
         - parent: toy_id
           name: id
         - type: static
           parent: type
           value: Dog
-    - name: cat_toy
-      table: cat_toys
+    cat_toy:
+      model: cat_toys
       constraints:
         - parent: toy_id
           name: id
         - type: static
           parent: type
           value: Cat
+  dog_toys:
+  cat_toys:
 
 Partitioner Example 1:
-  name: dogs
-  table: animals
-  partitioners:
-    - name: type
-      value: Dog
-    - name: deleted
-      value: false
+  dogs:
+    table: animals
+    partitioners:
+      - name: type
+        value: Dog
+      - name: deleted
+        value: false
 
 Partitioner Example 2:
-  name: owners
-  models:
-    - name: dogs
-      table: animals
-      constraints:
-        - name: owner_id
-          parent: id
-      partitioners:
-        - name: type
-          value: Dog
-        - name: deleted
-          value: false
+  owners:
+    relationships:
+      dogs:
+        constraints:
+          - name: owner_id
+            parent: id
+  dogs:
+    table: animals
+    partitioners:
+      - name: type
+        value: Dog
+      - name: deleted
+        value: false
 
 Patients:
-  name: patients
-  models:
-    - name: patient_payments
-      constraints:
-        - type: reference
-          parent: id
-          name: patient_id
-    - name: patient_field_values
-      constraints:
-        - type: reference
-          parent: id
-          name: patient_id
-      models:
-        - name: fields
-          constraints:
-            - type: reference
-              parent: field_id
-              name: id
+  patients:
+    relationships:
+      patient_payments:
+        constraints:
+          - type: reference
+            parent: id
+            name: patient_id
+      patient_field_values:
+        constraints:
+          - type: reference
+            parent: id
+            name: patient_id
+  patient_field_values:
+    relationships:
+      fields:
+        constraints:
+          - type: reference
+            parent: field_id
+            name: id
+  patient_payments:
+  fields:

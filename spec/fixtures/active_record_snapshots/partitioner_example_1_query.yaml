@@ -1,5 +1,6 @@
 model_name: Partitioner Example 1
 query:
+  from: dogs
   fields:
     - key_path: id
 sqlite_readable: |+

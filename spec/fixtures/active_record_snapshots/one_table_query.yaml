@@ -1,5 +1,6 @@
 model_name: Theaters, Members, and Movies
 query:
+  from: theaters
   fields:
     - key_path: id
       display: 'ID #'

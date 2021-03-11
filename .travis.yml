@@ -9,7 +9,7 @@ rvm:
   # Build on the latest stable of all supported Rubies (https://www.ruby-lang.org/en/downloads/):
   - 2.5.8
   - 2.6.6
-  - 2.7.1
+  - 2.7.2
 env:
   - AR_VERSION=5
   - AR_VERSION=6

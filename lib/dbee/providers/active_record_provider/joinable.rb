@@ -19,40 +19,37 @@ module Dbee
       # can either be a physical table OR a derived table generated from a
       # subquery.
       class Joinable # :nodoc: all
-        attr_reader :constraints, :name, :parent_model, :partitioners, :table, :table_alias_maker
+        extend Forwardable
 
-        # TODO: refactor as suggested by Rubocop
-        # rubocop:disable Metrics/ParameterLists
+        attr_reader :model, :table_alias_maker
+
+        def_delegators :model, :name, :partitioners, :relationships
+
         def initialize(
-          constraints:, name:, parent_model:, arel: nil,
-          partitioners: [],
-          table: nil,
+          model,
           table_alias_maker: Dbee::Providers::ActiveRecordProvider::SafeAliasMaker.new
         )
-          @arel = arel
-          @constraints = constraints
-          @name = name
-          @parent_model = parent_model
-          @partitioners = partitioners
-          @table = table
+          @model = model || raise(ArgumentError, 'model is required')
           @table_alias_maker = table_alias_maker
         end
-        # rubocop:enable Metrics/ParameterLists
 
-        # TODO: move this idea to Dbee:
-        def parent_model_path
-          parent_model.split('.')
+        def to_arel(join_path = [])
+          # Intentional disable to avoid having an memoized variable starting
+          # with a verb.
+          # rubocop:disable Naming/MemoizedInstanceVariableName
+          @arel ||= model.respond_to?(:to_arel) ? model.to_arel : make_table(join_path)
+          # rubocop:enable Naming/MemoizedInstanceVariableName
         end
 
-        # TODO: CLEAN THIS UP! Adding the join path like this is a complete hack.
-        def arel(join_path = [])
-          @arel ||= make_table(join_path)
+        def ==(other)
+          # TODO: add support for table_alias_maker
+          other.instance_of?(self.class) && other.model == model
         end
 
         private
 
         def make_table(join_path)
-          Arel::Table.new(table).tap do |arel_table|
+          Arel::Table.new(model.table).tap do |arel_table|
             arel_table.table_alias = table_alias_maker.make(join_path)
           end
         end
@@ -60,49 +57,3 @@ module Dbee
     end
   end
 end
-
-# # Two level example:
-
-# # Most inner query:
-# derived_tree_path = []
-
-# # Second level query:
-# derived_tree_path = [['theater_ticket_pricing_effective_dates']]
-# # derived_tree_path = [
-# #   ["ticket_prices"],
-# #   ["ticket_prices", 'theater_ticket_pricing_effective_dates']
-# # ]
-
-# Joinable(
-#   arel: arel,
-#   name: 'theater_ticket_pricing_effective_dates',
-#   constraints: ...,
-#   parent_model: 'ticket_prices',
-# )
-
-# # Top query:
-# derived_tree_path = [["effective_ticket_prices"]]
-# Joinable(
-#   arel: arel,
-#   name: 'effective_ticket_prices',
-#   constraints: ...,
-#   parent_model: 'theaters',
-# )
-
-# # One subquery example:
-
-# # Subquery
-# derived_tree_path = []
-
-# # Outer query
-# derived_tree_path = [
-#   ["ticket_prices"],
-#   ["ticket_prices", "effective_ticket_prices"]
-# ]
-
-# Joinable(
-#   arel: arel,
-#   name: 'effective_ticket_prices',
-#   constraints: ...,
-#   parent_model: 'ticket_prices'
-# )

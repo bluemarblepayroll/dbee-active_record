@@ -11,8 +11,8 @@ Gem::Specification.new do |s|
     By default Dbee ships with no underlying SQL generator.  This library will plug in ActiveRecord into Dbee and Dbee will use it for SQL generation.
   DESCRIPTION
 
-  s.authors     = ['Matthew Ruggio']
-  s.email       = ['mruggio@bluemarblepayroll.com']
+  s.authors     = ['Matthew Ruggio', 'Craig Kattner']
+  s.email       = ['mruggio@bluemarblepayroll.com', 'ckattner@bluemarblepayroll.com']
   s.files       = `git ls-files`.split("\n")
   s.test_files  = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.bindir      = 'exe'
@@ -42,18 +42,22 @@ Gem::Specification.new do |s|
     end
 
   s.add_dependency('activerecord', activerecord_version)
-  # TODO: update this once dbee has been officially released.
-  # s.add_dependency('dbee', '~>2', '>=2.1.1')
+  # TODO: add this back once dbee updates have been released
+  # s.add_dependency('dbee', '~>2', '~>3')
 
   s.add_development_dependency('guard-rspec', '~>4.7')
   s.add_development_dependency('mysql2', '~>0.5')
   s.add_development_dependency('pry', '~>0')
   s.add_development_dependency('pry-byebug')
   s.add_development_dependency('rake', '~> 13')
-  s.add_development_dependency('rspec', '~> 3')
-  s.add_development_dependency('rubocop', '~>0.90.0')
+  s.add_development_dependency('rspec', '~> 3.8')
+  s.add_development_dependency('rubocop', '~> 1')
+  s.add_development_dependency('rubocop-rake')
+  s.add_development_dependency('rubocop-rspec')
   s.add_development_dependency('simplecov', '~>0.19.0')
   s.add_development_dependency('simplecov-console', '~>0.7.0')
   s.add_development_dependency('sqlite3', '~>1')
+  # Helpful to spot differences in longer SQL queries:
+  s.add_development_dependency('super_diff', '~>0.6')
   s.add_development_dependency('terminal-notifier-guard')
 end

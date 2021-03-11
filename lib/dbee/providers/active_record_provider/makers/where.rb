@@ -16,14 +16,20 @@ module Dbee
           include Singleton
 
           def make(filter, arel_column)
-            # If the filter has a value of nil, then simply return an IS NULL predicate
-            return make_is_null_predicate(arel_column, filter) unless filter.value
+            # If the filter has a value of nil, then simply return an IS (NOT) NULL predicate
+            return make_is_null_predicate(arel_column, filter.class) if filter.value.nil?
 
             values = Array(filter.value).flatten
 
             # This logic helps ensure that if a null exists that it translates to an IS NULL
             # predicate and does not get put into an in or not_in clause.
-            predicates = values.include?(nil) ? [make_is_null_predicate(arel_column)] : []
+            predicates =
+              if values.include?(nil)
+                [make_is_null_predicate(arel_column, filter.class)]
+              else
+                []
+              end
+
             predicates += make_predicates(filter, arel_column, values - [nil])
 
             # Chain all predicates together
@@ -47,7 +53,20 @@ module Dbee
             Query::Filters::StartsWith => ->(node, val) { node.matches("#{val}%") }
           }.freeze
 
-          private_constant :FILTER_EVALUATORS
+          NULL_PREDICATE_MAP = {
+            Query::Filters::Contains => Query::Filters::Equals,
+            Query::Filters::Equals => Query::Filters::Equals,
+            Query::Filters::GreaterThan => Query::Filters::Equals,
+            Query::Filters::GreaterThanOrEqualTo => Query::Filters::Equals,
+            Query::Filters::LessThan => Query::Filters::Equals,
+            Query::Filters::LessThanOrEqualTo => Query::Filters::Equals,
+            Query::Filters::NotContain => Query::Filters::NotEquals,
+            Query::Filters::NotEquals => Query::Filters::NotEquals,
+            Query::Filters::NotStartWith => Query::Filters::NotEquals,
+            Query::Filters::StartsWith => Query::Filters::Equals
+          }.freeze
+
+          private_constant :FILTER_EVALUATORS, :NULL_PREDICATE_MAP
 
           def make_predicates(filter, arel_column, values)
             if use_in?(filter, values)
@@ -81,9 +100,9 @@ module Dbee
             method.call(arel_column, value)
           end
 
-          def make_is_null_predicate(arel_column, filter = nil)
-            operator = filter&.class || Query::Filters::Equals
-            make_predicate(arel_column, operator, nil)
+          def make_is_null_predicate(arel_column, requested_filter_class)
+            actual_filter_class = NULL_PREDICATE_MAP[requested_filter_class]
+            make_predicate(arel_column, actual_filter_class, nil)
           end
         end
       end

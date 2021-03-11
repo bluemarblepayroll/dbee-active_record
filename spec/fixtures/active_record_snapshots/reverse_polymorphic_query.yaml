@@ -1,5 +1,6 @@
 model_name: Reverse Polymorphic Example
 query:
+  from: animals
   fields:
     - key_path: id
     - key_path: type

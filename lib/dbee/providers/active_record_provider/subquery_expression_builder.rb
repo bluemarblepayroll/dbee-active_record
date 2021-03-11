@@ -29,10 +29,14 @@ module Dbee
         def build(queries, append_to_model: true)
           Array(queries).map do |subquery|
             # TODO: move this logic to Dbee and consolidate with similar logic in DerivedModel:
-            _root_model, *model_path = subquery.model.to_s.split('.')
+            # _root_model, *model_path = subquery.model.to_s.split('.')
 
-            subquery_expression = expression_builder.new_scoped_to_model_path(model_path)
-            subquery_expression.add(subquery)
+            subquery_expression = ExpressionBuilder.new(
+              expression_builder.schema,
+              expression_builder.table_alias_maker,
+              expression_builder.column_alias_maker
+            )
+            subquery_expression.to_sql(subquery)
 
             subquery_expression.finalize(subquery).tap do |joinable|
               # The outer query needs to have this derived table appended to its

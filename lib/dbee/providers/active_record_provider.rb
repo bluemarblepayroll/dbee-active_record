@@ -10,10 +10,10 @@
 require 'dbee'
 require 'active_record'
 
-require_relative 'active_record_provider/derived_model'
+require_relative 'active_record_provider/derived_model_builder'
+require_relative 'active_record_provider/derived_schema'
 require_relative 'active_record_provider/expression_builder'
 require_relative 'active_record_provider/joinable'
-require_relative 'active_record_provider/joinable_builder'
 require_relative 'active_record_provider/obfuscated_alias_maker'
 require_relative 'active_record_provider/safe_alias_maker'
 require_relative 'active_record_provider/subquery_expression_builder'
@@ -39,12 +39,12 @@ module Dbee
         @column_alias_maker = alias_maker(column_prefix)
       end
 
-      def sql(model, query)
+      def sql(schema, query)
         ExpressionBuilder.new(
-          model,
+          schema,
           table_alias_maker,
           column_alias_maker
-        ).add(query).to_sql
+        ).to_sql(query)
       end
 
       private

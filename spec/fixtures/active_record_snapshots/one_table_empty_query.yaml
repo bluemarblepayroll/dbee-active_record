@@ -1,5 +1,6 @@
 model_name: Patients
 query:
+  from: patients
 sqlite_readable: |+
   SELECT "patients".* FROM "patients" "patients"
 sqlite_not_readable: |+

@@ -1,5 +1,6 @@
 model_name: Partitioner Example 2
 query:
+  from: owners
   fields:
     - key_path: id
     - key_path: dogs.id

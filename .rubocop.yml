@@ -11,7 +11,7 @@ Metrics/AbcSize:
     - spec/db_helper.rb
 
 Metrics/BlockLength:
-  ExcludedMethods:
+  IgnoredMethods:
     - let
     - it
     - describe
