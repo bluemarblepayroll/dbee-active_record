@@ -35,7 +35,6 @@ query:
   given:
     - name: effective_ticket_prices
       from: ticket_prices
-      # parent_model: theaters
       relationships_from:
         theaters:
           constraints:

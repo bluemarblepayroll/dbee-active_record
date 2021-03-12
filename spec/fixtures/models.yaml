@@ -1,48 +1,11 @@
 Theaters and Movies with Derived Models:
-  name: theaters
-  table: theaters
-  models:
-    - name: ticket_prices
-      table: ticket_prices
-      constraints:
-        - type: reference
-          parent: id
-          name: theater_id
-    - name: effective_ticket_prices
-      type: derived
-      constraints:
-        - type: reference
-          parent: id
-          name: theater_id
-      query:
-        model: theaters.ticket_prices
-        filters:
-        # Coearce the join to theater_ticket_pricing_effective_dates to an inner join:
-        - key_path: theater_ticket_pricing_effective_dates.theater_id
-          type: not_equals
-          value:
-        given:
-        - name: theater_ticket_pricing_effective_dates
-          model: theaters.ticket_prices
-          # Not sure I like this. `theaters.ticket_prices` is probably more intuitive.
-          # The user has to know that the enclosing query is already scoped to ticket_prices.
-          parent_model: ticket_prices
-          constraints:
-          - name: theater_id
-            parent: theater_id
-          - name: effective_date
-            parent: effective_date
-          fields:
-          - key_path: theater_id
-          - key_path: effective_date
-            aggregator: max
-          filters:
-          - key_path: effective_date
-            type: less_than_or_equal_to
-            value: '2017-01-01'
-
-Theaters, Members, and Movies with Derived Models Directed Graph Based with Nested Sub-models:
   theaters:
+    relationships:
+      effective_ticket_prices:
+        constraints:
+          - type: reference
+            parent: id
+            name: theater_id
   ticket_prices:
     relationships:
       theaters:
@@ -51,12 +14,6 @@ Theaters, Members, and Movies with Derived Models Directed Graph Based with Nest
             parent: id
             name: theater_id
   effective_ticket_prices:
-    relationships:
-      theaters:
-        constraints:
-          - type: reference
-            parent: id
-            name: theater_id
     query:
       from: ticket_prices
       filters:
@@ -67,7 +24,7 @@ Theaters, Members, and Movies with Derived Models Directed Graph Based with Nest
       given:
         - name: theater_ticket_pricing_effective_dates
           from: ticket_prices
-          relationships:
+          relationships_from:
             ticket_prices:
               constraints:
                 - name: theater_id
