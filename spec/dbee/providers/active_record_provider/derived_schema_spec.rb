@@ -93,15 +93,15 @@ describe Dbee::Providers::ActiveRecordProvider::DerivedSchema do
     end
 
     it 'attaches the derived model to the schema based on the subquery\'s relationships_from' do
-      pending 'this is the next step in subquery support'
+      query_path = Dbee::KeyPath.new('effective_ticket_prices.id')
       subquery = Dbee::Query.make(subquery_spec)
-
-      subject.append_subquery(subquery)
 
       expected_subquery_relationship = Dbee::Model::Relationships.make(
         name: 'effective_ticket_prices',
         constraints: subquery.relationships_from['ticket_prices'].constraints
       )
+
+      subject.append_subquery(subquery)
 
       expected_query_path = [
         [
@@ -109,9 +109,8 @@ describe Dbee::Providers::ActiveRecordProvider::DerivedSchema do
           subject.joinable_for_model_name!('effective_ticket_prices')
         ]
       ]
-      found_query_path = subject.expand_query_path(
-        ticket_prices_joinable, Dbee::KeyPath.new('expected_ticket_prices.id')
-      )
+
+      found_query_path = subject.expand_query_path(ticket_prices_joinable, query_path)
       expect(found_query_path).to eq expected_query_path
     end
   end

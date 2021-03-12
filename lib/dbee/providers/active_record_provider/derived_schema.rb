@@ -31,8 +31,20 @@ module Dbee
           @appended_joinables_by_name = {}
         end
 
+        # Like Dbee::Schema#expand_query_path except that its first parameter
+        # is a Dbee::Providers::ActiveRecordProvider::Joinable instead of a
+        # Dbee::Model and it returns a list of tuples containing Dbee
+        # relationships and Dbee::Providers::ActiveRecordProvider::Joinable
+        # instances.
+        #
+        # Additionally, this traverses the schema graph for joinables which
+        # have been appended via the append_subquery method.
         def expand_query_path(joinable, key_path)
-          dbee_schema.expand_query_path(joinable.model, key_path).map do |relationship, model|
+          dbee_path = dbee_schema.expand_query_path(joinable.model, key_path) do |model, rel_name|
+            find_in_appended_joinables(model, rel_name)
+          end
+
+          dbee_path.map do |relationship, model|
             [relationship, joinable(model)]
           end
         end
@@ -52,6 +64,8 @@ module Dbee
         private
 
         def joinable(model)
+          return model if model.is_a?(Joinable)
+
           Joinable.new(model, table_alias_maker: table_alias_maker)
         end
 
@@ -60,7 +74,28 @@ module Dbee
         end
 
         def name_exists?(model_name)
-          appended_joinables_by_name[model_name.to_s] || dbee_schema.model_for_name(model_name)
+          !(
+            appended_joinables_by_name[model_name.to_s] || dbee_schema.model_for_name(model_name)
+          ).nil?
+        end
+
+        def find_in_appended_joinables(model, rel_name)
+          joinable = appended_joinables_by_name[rel_name]
+          return [] unless joinable
+
+          relationship =  invert_from_relationship(
+            joinable.relationships_from[model.name.to_s],
+            rel_name
+          )
+          [relationship, joinable]
+        end
+
+        def invert_from_relationship(from_relationship, to_name)
+          Dbee::Model::Relationships.make(
+            name: to_name,
+            constraints: from_relationship.constraints,
+            model: from_relationship.model
+          )
         end
 
         attr_reader :appended_joinables_by_name

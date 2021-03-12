@@ -23,7 +23,7 @@ module Dbee
 
         attr_reader :model, :table_alias_maker
 
-        def_delegators :model, :name, :partitioners, :relationships
+        def_delegators :model, :name, :partitioners, :relationships, :relationships_from
 
         def initialize(
           model,

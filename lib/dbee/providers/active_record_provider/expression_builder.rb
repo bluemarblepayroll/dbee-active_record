@@ -205,12 +205,6 @@ module Dbee
         def build(new_expression)
           @statement = new_expression
         end
-
-        def make_table(table_name, alias_name)
-          Arel::Table.new(table_name).tap do |table|
-            table.table_alias = table_alias_maker.make(alias_name)
-          end
-        end
       end
     end
   end
