@@ -11,7 +11,11 @@ require 'spec_helper'
 require 'db_helper'
 
 describe Dbee::Providers::ActiveRecordProvider::ExpressionBuilder do
-  let(:schema)      { Dbee::Schema.new(models['Patients']) }
+  let(:schema) do
+    Dbee::Providers::ActiveRecordProvider::DerivedSchema.new(
+      Dbee::Schema.new(models['Patients'])
+    )
+  end
   let(:alias_maker) { Dbee::Providers::ActiveRecordProvider::SafeAliasMaker.new }
 
   let(:empty_query) { Dbee::Query.make(from: :patients) }

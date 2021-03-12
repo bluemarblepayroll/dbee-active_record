@@ -43,7 +43,7 @@ module Dbee
 
         attr_reader :base_table,
                     :key_paths_to_arel_columns,
-                    :from_model,
+                    :from_model, # TODO: rename to from_joinable
                     :statement,
                     :requires_group_by,
                     :group_by_columns,
@@ -74,8 +74,8 @@ module Dbee
         end
 
         def establish_query_base(query)
-          @from_model = schema.model_for_name!(query.from)
-          @base_table = make_table(from_model.table, @from_model.name)
+          @from_model = schema.joinable_for_model_name!(query.from)
+          @base_table = @from_model.to_arel(from_model.name)
           build(base_table)
         end
 
@@ -159,7 +159,7 @@ module Dbee
         end
 
         def table(ancestor_names, relationship, model, previous_table)
-          table = make_table(model.table, ancestor_names)
+          table = model.to_arel(ancestor_names)
 
           on = constraint_maker.make(relationship.constraints, table, previous_table)
 

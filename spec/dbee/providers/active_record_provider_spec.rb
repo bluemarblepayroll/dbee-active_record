@@ -91,8 +91,11 @@ describe Dbee::Providers::ActiveRecordProvider do
               let(:key) { "#{dbms}_#{type}" }
 
               yaml_fixture_files('active_record_snapshots').each_pair do |filename, snapshot|
+                # next unless File.basename(filename) == 'two_table_query.yaml' && !readable
+
                 specify File.basename(filename) do
                   pending 'still working on subquery support' if filename =~ /subquery/
+
                   check_pending(snapshot[key])
 
                   model_name = snapshot['model_name']

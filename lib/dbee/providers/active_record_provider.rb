@@ -41,7 +41,7 @@ module Dbee
 
       def sql(schema, query)
         ExpressionBuilder.new(
-          schema,
+          DerivedSchema.new(schema, table_alias_maker: table_alias_maker),
           table_alias_maker,
           column_alias_maker
         ).to_sql(query)
